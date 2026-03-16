@@ -1,0 +1,191 @@
+# .github/workflows/qa-pipeline.yml
+# AdventureLog QA Pipeline — Assignment 1
+# Runs on every push to main/qa branches and on all Pull Requests
+
+name: AdventureLog QA Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'qa/**'        # matches qa/assignment-1, qa/assignment-2, etc.
+  pull_request:
+    branches:
+      - main
+
+# ─────────────────────────────────────────────────────────────────
+# JOB 1: Backend Unit Tests (pytest)
+# Runs Django-independent unit tests + logic tests
+# ─────────────────────────────────────────────────────────────────
+jobs:
+  backend-tests:
+    name: "🧪 Backend Unit Tests (pytest)"
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python 3.11
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Step 3: Install pytest (no Django needed for smoke tests)
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+
+      # Step 4: Run pytest on our QA test folder
+      - name: Run pytest
+        run: |
+          pytest qa/test-cases/backend/ -v --tb=short \
+            --cov=qa/test-cases/backend \
+            --cov-report=term-missing \
+            --cov-report=xml:qa/reports/coverage.xml
+
+      # Step 5: Upload coverage report as a downloadable artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()    # upload even if tests fail
+        with:
+          name: coverage-report
+          path: qa/reports/coverage.xml
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # JOB 2: API Smoke Test (curl against live Docker stack)
+  # Boots the full AdventureLog Docker Compose stack and
+  # verifies the API is responding
+  # ─────────────────────────────────────────────────────────────────
+  api-smoke-test:
+    name: "🌐 API Smoke Test (Docker + curl)"
+    runs-on: ubuntu-latest
+    needs: backend-tests    # only runs if Job 1 passes
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Create the .env file the docker-compose needs
+      # We use GitHub Secrets for sensitive values (set up in Step 8)
+      - name: Create .env file for Docker Compose
+        run: |
+          cat > .env << 'EOF'
+          PGHOST=db
+          PGDATABASE=database
+          PGUSER=adventure
+          PGPASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-not-for-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin123!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          PUBLIC_SERVER_URL=http://server:8000
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          EOF
+
+      # Step 3: Start all containers with Docker Compose
+      - name: Start AdventureLog with Docker Compose
+        run: |
+          docker compose up -d
+          echo "Waiting for containers to start..."
+          sleep 30
+
+      # Step 4: Show running containers (useful for debugging)
+      - name: Show running containers
+        run: docker compose ps
+
+      # Step 5: Show backend logs (useful if API test fails)
+      - name: Show backend startup logs
+        run: docker compose logs server --tail=50
+
+      # Step 6: Wait for the backend API to be ready
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for API to respond..."
+          for i in {1..20}; do
+            if curl -sf http://localhost:8016/api/ > /dev/null 2>&1; then
+              echo "✅ API is up after $i attempts"
+              break
+            fi
+            echo "Attempt $i: API not ready yet, waiting 5s..."
+            sleep 5
+            if [ $i -eq 20 ]; then
+              echo "❌ API did not start in time"
+              docker compose logs server
+              exit 1
+            fi
+          done
+
+      # Step 7: Run API smoke tests using curl
+      - name: API Smoke Test — GET /api/
+        run: |
+          echo "Testing API root endpoint..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/)
+          echo "HTTP Status: $RESPONSE"
+          if [ "$RESPONSE" != "200" ]; then
+            echo "❌ Expected 200 but got $RESPONSE"
+            exit 1
+          fi
+          echo "✅ API root returned 200 OK"
+
+      - name: API Smoke Test — Unauthenticated access returns 401
+        run: |
+          echo "Testing that unauthenticated adventures request returns 401 or 403..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
+          echo "HTTP Status: $RESPONSE"
+          if [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "403" ]; then
+            echo "✅ Unauthenticated access correctly blocked (HTTP $RESPONSE)"
+          else
+            echo "❌ Expected 401 or 403 but got $RESPONSE — possible auth bypass!"
+            exit 1
+          fi
+
+      - name: API Smoke Test — Login endpoint exists
+        run: |
+          echo "Testing login endpoint returns 400 (not 404)..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST http://localhost:8016/api/auth/login/ \
+            -H "Content-Type: application/json" \
+            -d '{"username":"wrong","password":"wrong"}')
+          echo "HTTP Status: $RESPONSE"
+          # 400 = endpoint exists but credentials wrong (expected)
+          # 404 = endpoint not found (bad)
+          if [ "$RESPONSE" = "400" ] || [ "$RESPONSE" = "401" ]; then
+            echo "✅ Login endpoint exists and validates credentials (HTTP $RESPONSE)"
+          else
+            echo "❌ Unexpected response $RESPONSE from login endpoint"
+            exit 1
+          fi
+
+      # Step 8: Save Docker logs as artifacts for debugging
+      - name: Save Docker Compose logs
+        if: always()
+        run: |
+          mkdir -p qa/reports
+          docker compose logs > qa/reports/docker-compose.log 2>&1
+
+      - name: Upload Docker logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: qa/reports/docker-compose.log
+          retention-days: 7
+
+      # Step 9: Shut down containers
+      - name: Shut down Docker Compose
+        if: always()
+        run: docker compose down -v
