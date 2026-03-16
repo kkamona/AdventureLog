@@ -1,21 +1,16 @@
-# .github/workflows/qa-pipeline.yml
-# AdventureLog QA Pipeline — Assignment 1
-# Runs on every push to main/qa branches and on all Pull Requests
-
 name: AdventureLog QA Pipeline
 
 on:
   push:
     branches:
       - main
-      - 'qa/**'        # matches qa/assignment-1, qa/assignment-2, etc.
+      - 'qa/**'
   pull_request:
     branches:
       - main
 
 # ─────────────────────────────────────────────────────────────────
 # JOB 1: Backend Unit Tests (pytest)
-# Runs Django-independent unit tests + logic tests
 # ─────────────────────────────────────────────────────────────────
 jobs:
   backend-tests:
@@ -23,24 +18,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python 3.11
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # Step 3: Install pytest (no Django needed for smoke tests)
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
 
-      # Step 4: Run pytest on our QA test folder
       - name: Run pytest
         run: |
           pytest qa/test-cases/backend/ -v --tb=short \
@@ -48,22 +39,19 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml:qa/reports/coverage.xml
 
-      # Step 5: Upload coverage report as a downloadable artifact
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
-        if: always()    # upload even if tests fail
+        if: always()
         with:
           name: coverage-report
           path: qa/reports/coverage.xml
           retention-days: 30
 
-  # ─────────────────────────────────────────────────────────────────
-  # JOB 2: API Smoke Test (curl against live Docker stack)
-  # Boots the full AdventureLog Docker Compose stack and
-  # verifies the API is responding
-  # ─────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
+# JOB 2: API Smoke Test (full Docker stack)
+# ─────────────────────────────────────────────────────────────────
   api-smoke-test:
-    name: "API Smoke Test (Docker + curl)"
+    name: "🌐 API Smoke Test (Docker + curl)"
     runs-on: ubuntu-latest
     needs: backend-tests
 
@@ -71,145 +59,165 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 1: Create the .env file
+      # THE FIX: The .env file must contain BOTH sets of variables:
+      #   - POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD  → used by the DB container to initialize
+      #   - PGHOST / PGDATABASE / PGUSER / PGPASSWORD        → used by the Django backend to connect
+      # Both are required. Previously we only had the PG* client variables,
+      # so the database container crashed immediately on startup.
       - name: Create .env file for Docker Compose
         run: |
           cat > .env << 'EOF'
+          # ── Database initialization variables (required by postgis/postgis image) ──
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+
+          # ── Django backend connection variables ──
           PGHOST=db
           PGDATABASE=database
           PGUSER=adventure
           PGPASSWORD=changeme123
-          SECRET_KEY=ci-test-secret-key-not-for-production
+
+          # ── Django application settings ──
+          SECRET_KEY=ci-test-secret-key-not-for-production-use-only
           DJANGO_ADMIN_USERNAME=admin
-          DJANGO_ADMIN_PASSWORD=Admin123!
+          DJANGO_ADMIN_PASSWORD=Admin1234!
           DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+
+          # ── Frontend / network settings ──
           PUBLIC_URL=http://localhost:8016
-          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          DEBUG=True
           FRONTEND_URL=http://localhost:8015
+          FRONTEND_PORT=8015
           BACKEND_PORT=8016
-          DISABLE_REGISTRATION=False
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
           PUBLIC_SERVER_URL=http://server:8000
           ORIGIN=http://localhost:8015
           BODY_SIZE_LIMIT=Infinity
+          DISABLE_REGISTRATION=False
+          DEBUG=True
           EOF
 
-      # Step 2: Start ONLY the database first, and wait for it to be healthy
-      # This is the critical fix — we give PostGIS time to initialize
-      # before the backend tries to connect
-      - name: Start database container only
-        run: |
-          docker compose up -d db
-          echo "Waiting for PostGIS to fully initialize (this takes ~60s on first boot)..."
+      # Start ONLY the database first
+      - name: Start database container
+        run: docker compose up -d db
 
-      - name: Wait for database to be healthy
+      # Poll until Postgres is actually accepting connections
+      # pg_isready returns 0 (success) only when the DB is ready
+      - name: Wait for database to be ready
         run: |
-          echo "Polling database readiness..."
+          echo "Waiting for PostGIS to initialize..."
           for i in {1..30}; do
             if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database is ready after $i attempts"
+              echo "✅ Database is ready after $i attempts (~$((i*5))s)"
               break
             fi
             echo "Attempt $i/30: DB not ready yet, waiting 5s..."
             sleep 5
             if [ $i -eq 30 ]; then
-              echo "❌ Database did not become ready in time"
+              echo "❌ Database did not start in time. DB logs:"
               docker compose logs db
               exit 1
             fi
           done
 
-      # Step 3: Now start the remaining containers (backend + frontend + cdn)
-      - name: Start remaining containers
+      # Now start the backend (server) — it will run Django migrations automatically
+      - name: Start backend container
         run: |
-          docker compose up -d server cdn frontend
-          echo "Backend containers started, giving them time to run migrations..."
-          sleep 20
+          docker compose up -d server
+          echo "Waiting for Django to run migrations and start..."
+          sleep 25
 
-      # Step 4: Show container status
-      - name: Show running containers
+      - name: Show container status
         run: docker compose ps
 
-      # Step 5: Show backend logs so far
       - name: Show backend logs
-        run: docker compose logs server --tail=60
+        run: docker compose logs server --tail=80
 
-      # Step 6: Wait for the backend API to respond
+      # Poll the API until it responds
       - name: Wait for API to be ready
         run: |
-          echo "Polling API readiness..."
+          echo "Polling API on http://localhost:8016/api/ ..."
           for i in {1..24}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/ 2>/dev/null || echo "000")
             echo "Attempt $i/24: HTTP $STATUS"
             if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-              echo "✅ API is responding (HTTP $STATUS)"
+              echo "✅ API is up! (HTTP $STATUS)"
               break
             fi
             sleep 5
             if [ $i -eq 24 ]; then
-              echo "❌ API did not start in time. Final backend logs:"
+              echo "❌ API did not become ready. Final logs:"
               docker compose logs server --tail=100
               exit 1
             fi
           done
 
-      # Step 7: Run the actual smoke tests
-      - name: "Smoke test: GET /api/ returns 200"
-        run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/)
-          echo "HTTP Status: $RESPONSE"
-          if [ "$RESPONSE" != "200" ]; then
-            echo "❌ Expected 200 but got $RESPONSE"
-            exit 1
-          fi
-          echo "✅ API root returned 200 OK"
+      # ── Smoke Tests ──────────────────────────────────────────────
 
-      - name: "Smoke test: /api/adventures/ blocks unauthenticated access"
+      - name: "Smoke test 1: GET /api/ returns 200"
         run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
-          echo "HTTP Status: $RESPONSE"
-          if [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "403" ]; then
-            echo "✅ Unauthenticated access correctly blocked (HTTP $RESPONSE)"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/)
+          echo "HTTP $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ PASS" || { echo "❌ FAIL — expected 200, got $STATUS"; exit 1; }
+
+      - name: "Smoke test 2: Adventures endpoint blocks unauthenticated access"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
+          echo "HTTP $STATUS"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated correctly blocked (HTTP $STATUS)"
           else
-            echo "❌ Expected 401/403 but got $RESPONSE"
+            echo "❌ FAIL — expected 401/403, got $STATUS (possible auth bypass!)"
             exit 1
           fi
 
-      - name: "Smoke test: Login endpoint responds (not 404)"
+      - name: "Smoke test 3: Login endpoint exists and validates"
         run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST http://localhost:8016/api/auth/login/ \
             -H "Content-Type: application/json" \
             -d '{"username":"wrong","password":"wrong"}')
-          echo "HTTP Status: $RESPONSE"
-          if [ "$RESPONSE" = "400" ] || [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "405" ]; then
-            echo "✅ Login endpoint exists (HTTP $RESPONSE)"
+          echo "HTTP $STATUS"
+          if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "405" ]; then
+            echo "✅ PASS — login endpoint exists (HTTP $STATUS)"
           else
-            echo "❌ Unexpected response $RESPONSE — endpoint may not exist"
+            echo "❌ FAIL — unexpected $STATUS (404 = endpoint missing)"
             exit 1
           fi
 
-      - name: "Smoke test: Admin panel accessible"
+      - name: "Smoke test 4: Admin panel is accessible"
         run: |
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
-          echo "HTTP Status: $RESPONSE"
-          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "301" ] || [ "$RESPONSE" = "302" ]; then
-            echo "✅ Admin panel accessible (HTTP $RESPONSE)"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
+          echo "HTTP $STATUS"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ PASS — admin panel reachable (HTTP $STATUS)"
           else
-            echo "❌ Admin panel returned $RESPONSE"
+            echo "❌ FAIL — got $STATUS"
             exit 1
           fi
 
-      # Step 8: Save logs as artifacts
-      - name: Save all container logs
+      - name: "Smoke test 5: Users endpoint blocks unauthenticated access"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/users/me/)
+          echo "HTTP $STATUS"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — user profile correctly blocked (HTTP $STATUS)"
+          else
+            echo "❌ FAIL — expected 401/403, got $STATUS"
+            exit 1
+          fi
+
+      # ── Artifacts ────────────────────────────────────────────────
+
+      - name: Save container logs
         if: always()
         run: |
           mkdir -p qa/reports
-          docker compose logs > qa/reports/docker-compose.log 2>&1
-          docker compose logs server > qa/reports/backend.log 2>&1
-          docker compose logs db > qa/reports/database.log 2>&1
+          docker compose logs         > qa/reports/all-containers.log 2>&1
+          docker compose logs server  > qa/reports/backend.log        2>&1
+          docker compose logs db      > qa/reports/database.log       2>&1
 
-      - name: Upload logs as artifacts
+      - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
