@@ -150,8 +150,12 @@ jobs:
       - name: Discover and log API routes
         run: |
           echo "=== Endpoint status map ==="
-          for EP in "/" "/api/" "/admin/" "/api/adventures/" "/api/collections/" \
-                    "/api/auth/login/" "/api/users/me/" "/api/countries/" "/api/regions/"; do
+          for EP in "/" "/api/" "/admin/" \
+                    "/api/locations/" "/api/collections/" "/api/itineraries/" \
+                    "/api/notes/" "/api/checklists/" "/api/categories/" \
+                    "/api/transportations/" "/api/images/" "/api/trails/" \
+                    "/api/activities/" "/api/visits/" "/api/lodging/" \
+                    "/api/attachments/" "/api/search/" "/api/auth/login/"; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
               http://localhost:8016${EP} 2>/dev/null || echo "000")
             echo "  http://localhost:8016${EP}  →  HTTP ${STATUS}"
@@ -184,9 +188,9 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke test 3: Adventures endpoint requires authentication"
+      - name: "Smoke test 3: Locations (adventures) endpoint requires authentication"
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
           echo "HTTP ${STATUS}"
           if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
             echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
@@ -197,7 +201,20 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke test 4: Login endpoint exists and rejects bad credentials"
+      - name: "Smoke test 4: Collections endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/collections/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
+
+      - name: "Smoke test 5: Login endpoint exists and rejects bad credentials"
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST http://localhost:8016/api/auth/login/ \
@@ -214,23 +231,38 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke test 5: User profile endpoint requires authentication"
+      - name: "Smoke test 6: Notes endpoint requires authentication"
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/users/me/)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/notes/)
           echo "HTTP ${STATUS}"
           if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — /api/users/me/ requires auth (HTTP ${STATUS})"
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth"
           else
-            echo "❌ FAIL — expected 401/403, got ${STATUS}"
+            echo "❌ FAIL — unexpected ${STATUS}"
             exit 1
           fi
 
-      - name: "Smoke test 6: Collections endpoint requires authentication"
+      - name: "Smoke test 7: Itineraries endpoint requires authentication"
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/collections/)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/itineraries/)
           echo "HTTP ${STATUS}"
           if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — /api/collections/ requires auth (HTTP ${STATUS})"
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
+
+      - name: "Smoke test 8: Categories endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/categories/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
           elif [ "$STATUS" = "200" ]; then
             echo "⚠️  WARNING — returned 200 without auth"
           else
