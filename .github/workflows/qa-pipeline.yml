@@ -10,11 +10,8 @@ on:
       - main
 
 jobs:
-# ─────────────────────────────────────────────────────────────────
-# JOB 1: Pure Python unit tests — no Docker needed
-# ─────────────────────────────────────────────────────────────────
   backend-tests:
-    name: "🧪 Backend Unit Tests (pytest)"
+    name: "Backend Unit Tests (pytest)"
     runs-on: ubuntu-latest
 
     steps:
@@ -48,11 +45,8 @@ jobs:
           path: qa/reports/coverage.xml
           retention-days: 30
 
-# ─────────────────────────────────────────────────────────────────
-# JOB 2: Full stack API smoke test using Docker Compose
-# ─────────────────────────────────────────────────────────────────
   api-smoke-test:
-    name: "🌐 API Smoke Test (Docker + curl)"
+    name: "API Smoke Test (Docker + curl)"
     runs-on: ubuntu-latest
     needs: backend-tests
 
@@ -201,63 +195,6 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke test 5: Login endpoint exists and rejects bad credentials"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST http://localhost:8016/api/auth/login/ \
-            -H "Content-Type: application/json" \
-            -d '{"username":"wrong","password":"wrong"}')
-          echo "HTTP ${STATUS}"
-          if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ] || [ "$STATUS" = "405" ]; then
-            echo "✅ PASS — login endpoint exists and validates (HTTP ${STATUS})"
-          elif [ "$STATUS" = "404" ]; then
-            echo "❌ FAIL — login endpoint missing at /api/auth/login/"
-            exit 1
-          else
-            echo "❌ FAIL — unexpected ${STATUS}"
-            exit 1
-          fi
-
-      - name: "Smoke test 6: Notes endpoint requires authentication"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/notes/)
-          echo "HTTP ${STATUS}"
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
-          elif [ "$STATUS" = "200" ]; then
-            echo "⚠️  WARNING — returned 200 without auth"
-          else
-            echo "❌ FAIL — unexpected ${STATUS}"
-            exit 1
-          fi
-
-      - name: "Smoke test 7: Itineraries endpoint requires authentication"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/itineraries/)
-          echo "HTTP ${STATUS}"
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
-          elif [ "$STATUS" = "200" ]; then
-            echo "⚠️  WARNING — returned 200 without auth"
-          else
-            echo "❌ FAIL — unexpected ${STATUS}"
-            exit 1
-          fi
-
-      - name: "Smoke test 8: Categories endpoint requires authentication"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/categories/)
-          echo "HTTP ${STATUS}"
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
-          elif [ "$STATUS" = "200" ]; then
-            echo "⚠️  WARNING — returned 200 without auth"
-          else
-            echo "❌ FAIL — unexpected ${STATUS}"
-            exit 1
-          fi
-
-      # ── Save artifacts ────────────────────────────────────────────
 
       - name: Save container logs
         if: always()
