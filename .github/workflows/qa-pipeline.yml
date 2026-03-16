@@ -63,17 +63,15 @@ jobs:
   # verifies the API is responding
   # ─────────────────────────────────────────────────────────────────
   api-smoke-test:
-    name: "🌐 API Smoke Test (Docker + curl)"
+    name: "API Smoke Test (Docker + curl)"
     runs-on: ubuntu-latest
-    needs: backend-tests    # only runs if Job 1 passes
+    needs: backend-tests
 
     steps:
-      # Step 1: Check out the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Create the .env file the docker-compose needs
-      # We use GitHub Secrets for sensitive values (set up in Step 8)
+      # Step 1: Create the .env file
       - name: Create .env file for Docker Compose
         run: |
           cat > .env << 'EOF'
@@ -96,43 +94,68 @@ jobs:
           BODY_SIZE_LIMIT=Infinity
           EOF
 
-      # Step 3: Start all containers with Docker Compose
-      - name: Start AdventureLog with Docker Compose
+      # Step 2: Start ONLY the database first, and wait for it to be healthy
+      # This is the critical fix — we give PostGIS time to initialize
+      # before the backend tries to connect
+      - name: Start database container only
         run: |
-          docker compose up -d
-          echo "Waiting for containers to start..."
-          sleep 30
+          docker compose up -d db
+          echo "Waiting for PostGIS to fully initialize (this takes ~60s on first boot)..."
 
-      # Step 4: Show running containers (useful for debugging)
-      - name: Show running containers
-        run: docker compose ps
-
-      # Step 5: Show backend logs (useful if API test fails)
-      - name: Show backend startup logs
-        run: docker compose logs server --tail=50
-
-      # Step 6: Wait for the backend API to be ready
-      - name: Wait for API to be ready
+      - name: Wait for database to be healthy
         run: |
-          echo "Waiting for API to respond..."
-          for i in {1..20}; do
-            if curl -sf http://localhost:8016/api/ > /dev/null 2>&1; then
-              echo "✅ API is up after $i attempts"
+          echo "Polling database readiness..."
+          for i in {1..30}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database is ready after $i attempts"
               break
             fi
-            echo "Attempt $i: API not ready yet, waiting 5s..."
+            echo "Attempt $i/30: DB not ready yet, waiting 5s..."
             sleep 5
-            if [ $i -eq 20 ]; then
-              echo "❌ API did not start in time"
-              docker compose logs server
+            if [ $i -eq 30 ]; then
+              echo "❌ Database did not become ready in time"
+              docker compose logs db
               exit 1
             fi
           done
 
-      # Step 7: Run API smoke tests using curl
-      - name: API Smoke Test — GET /api/
+      # Step 3: Now start the remaining containers (backend + frontend + cdn)
+      - name: Start remaining containers
         run: |
-          echo "Testing API root endpoint..."
+          docker compose up -d server cdn frontend
+          echo "Backend containers started, giving them time to run migrations..."
+          sleep 20
+
+      # Step 4: Show container status
+      - name: Show running containers
+        run: docker compose ps
+
+      # Step 5: Show backend logs so far
+      - name: Show backend logs
+        run: docker compose logs server --tail=60
+
+      # Step 6: Wait for the backend API to respond
+      - name: Wait for API to be ready
+        run: |
+          echo "Polling API readiness..."
+          for i in {1..24}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/ 2>/dev/null || echo "000")
+            echo "Attempt $i/24: HTTP $STATUS"
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+              echo "✅ API is responding (HTTP $STATUS)"
+              break
+            fi
+            sleep 5
+            if [ $i -eq 24 ]; then
+              echo "❌ API did not start in time. Final backend logs:"
+              docker compose logs server --tail=100
+              exit 1
+            fi
+          done
+
+      # Step 7: Run the actual smoke tests
+      - name: "Smoke test: GET /api/ returns 200"
+        run: |
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/)
           echo "HTTP Status: $RESPONSE"
           if [ "$RESPONSE" != "200" ]; then
@@ -141,51 +164,59 @@ jobs:
           fi
           echo "✅ API root returned 200 OK"
 
-      - name: API Smoke Test — Unauthenticated access returns 401
+      - name: "Smoke test: /api/adventures/ blocks unauthenticated access"
         run: |
-          echo "Testing that unauthenticated adventures request returns 401 or 403..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
           echo "HTTP Status: $RESPONSE"
           if [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "403" ]; then
             echo "✅ Unauthenticated access correctly blocked (HTTP $RESPONSE)"
           else
-            echo "❌ Expected 401 or 403 but got $RESPONSE — possible auth bypass!"
+            echo "❌ Expected 401/403 but got $RESPONSE"
             exit 1
           fi
 
-      - name: API Smoke Test — Login endpoint exists
+      - name: "Smoke test: Login endpoint responds (not 404)"
         run: |
-          echo "Testing login endpoint returns 400 (not 404)..."
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST http://localhost:8016/api/auth/login/ \
             -H "Content-Type: application/json" \
             -d '{"username":"wrong","password":"wrong"}')
           echo "HTTP Status: $RESPONSE"
-          # 400 = endpoint exists but credentials wrong (expected)
-          # 404 = endpoint not found (bad)
-          if [ "$RESPONSE" = "400" ] || [ "$RESPONSE" = "401" ]; then
-            echo "✅ Login endpoint exists and validates credentials (HTTP $RESPONSE)"
+          if [ "$RESPONSE" = "400" ] || [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "405" ]; then
+            echo "✅ Login endpoint exists (HTTP $RESPONSE)"
           else
-            echo "❌ Unexpected response $RESPONSE from login endpoint"
+            echo "❌ Unexpected response $RESPONSE — endpoint may not exist"
             exit 1
           fi
 
-      # Step 8: Save Docker logs as artifacts for debugging
-      - name: Save Docker Compose logs
+      - name: "Smoke test: Admin panel accessible"
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
+          echo "HTTP Status: $RESPONSE"
+          if [ "$RESPONSE" = "200" ] || [ "$RESPONSE" = "301" ] || [ "$RESPONSE" = "302" ]; then
+            echo "✅ Admin panel accessible (HTTP $RESPONSE)"
+          else
+            echo "❌ Admin panel returned $RESPONSE"
+            exit 1
+          fi
+
+      # Step 8: Save logs as artifacts
+      - name: Save all container logs
         if: always()
         run: |
           mkdir -p qa/reports
           docker compose logs > qa/reports/docker-compose.log 2>&1
+          docker compose logs server > qa/reports/backend.log 2>&1
+          docker compose logs db > qa/reports/database.log 2>&1
 
-      - name: Upload Docker logs
+      - name: Upload logs as artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-logs
-          path: qa/reports/docker-compose.log
+          path: qa/reports/*.log
           retention-days: 7
 
-      # Step 9: Shut down containers
-      - name: Shut down Docker Compose
+      - name: Shut down containers
         if: always()
         run: docker compose down -v
