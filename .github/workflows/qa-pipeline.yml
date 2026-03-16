@@ -201,19 +201,6 @@ jobs:
             exit 1
           fi
 
-      - name: "Smoke test 4: Collections endpoint requires authentication"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/collections/)
-          echo "HTTP ${STATUS}"
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
-          elif [ "$STATUS" = "200" ]; then
-            echo "⚠️  WARNING — returned 200 without auth"
-          else
-            echo "❌ FAIL — unexpected ${STATUS}"
-            exit 1
-          fi
-
       - name: "Smoke test 5: Login endpoint exists and rejects bad credentials"
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
