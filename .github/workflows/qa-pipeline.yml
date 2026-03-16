@@ -9,10 +9,10 @@ on:
     branches:
       - main
 
-# ─────────────────────────────────────────────────────────────────
-# JOB 1: Backend Unit Tests (pytest)
-# ─────────────────────────────────────────────────────────────────
 jobs:
+# ─────────────────────────────────────────────────────────────────
+# JOB 1: Pure Python unit tests — no Docker needed
+# ─────────────────────────────────────────────────────────────────
   backend-tests:
     name: "🧪 Backend Unit Tests (pytest)"
     runs-on: ubuntu-latest
@@ -34,6 +34,7 @@ jobs:
 
       - name: Run pytest
         run: |
+          mkdir -p qa/reports
           pytest qa/test-cases/backend/ -v --tb=short \
             --cov=qa/test-cases/backend \
             --cov-report=term-missing \
@@ -48,7 +49,7 @@ jobs:
           retention-days: 30
 
 # ─────────────────────────────────────────────────────────────────
-# JOB 2: API Smoke Test (full Docker stack)
+# JOB 2: Full stack API smoke test using Docker Compose
 # ─────────────────────────────────────────────────────────────────
   api-smoke-test:
     name: "🌐 API Smoke Test (Docker + curl)"
@@ -59,188 +60,193 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install curl
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl
+
+      # This exactly mirrors your local .env file — same variable names, same structure.
+      # The only difference: DEBUG=True so Django gives more useful error output in CI logs.
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
+          # 🌐 Frontend
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+
+          # 🐘 PostgreSQL Database
+          PGHOST=db
           POSTGRES_DB=database
           POSTGRES_USER=adventure
           POSTGRES_PASSWORD=changeme123
-          PGHOST=db
-          PGDATABASE=database
-          PGUSER=adventure
-          PGPASSWORD=changeme123
-          SECRET_KEY=ci-test-secret-key-not-for-production-use-only
+
+          # 🔒 Django Backend
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
           DJANGO_ADMIN_USERNAME=admin
           DJANGO_ADMIN_PASSWORD=Admin1234!
           DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
           PUBLIC_URL=http://localhost:8016
-          FRONTEND_URL=http://localhost:8015
-          FRONTEND_PORT=8015
-          BACKEND_PORT=8016
           CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          PUBLIC_SERVER_URL=http://server:8000
-          ORIGIN=http://localhost:8015
-          BODY_SIZE_LIMIT=Infinity
-          DISABLE_REGISTRATION=False
           DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
           EOF
 
+      # Start database alone first — never start server before DB is ready
       - name: Start database container
         run: docker compose up -d db
 
+      # pg_isready returns exit 0 only when Postgres is actually accepting connections
       - name: Wait for database to be ready
         run: |
           echo "Waiting for PostGIS to initialize..."
-          for i in {1..30}; do
+          for i in {1..40}; do
             if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database ready after $i attempts"
-              break
+              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              exit 0
             fi
-            echo "Attempt $i/30: not ready, waiting 5s..."
+            echo "Attempt ${i}/40: not ready yet, waiting 5s..."
             sleep 5
-            if [ $i -eq 30 ]; then
-              echo "❌ Database timed out. Logs:"
-              docker compose logs db
-              exit 1
-            fi
           done
+          echo "❌ Database never became ready. Logs:"
+          docker compose logs db
+          exit 1
 
+      # Start backend — Django runs migrations automatically on startup
       - name: Start backend container
         run: |
           docker compose up -d server
-          echo "Waiting for Django migrations to complete..."
-          sleep 30
+          echo "Waiting 45s for Django to run migrations..."
+          sleep 45
 
       - name: Show container status
         run: docker compose ps
 
-      - name: Show full backend logs
+      - name: Show backend logs
         run: docker compose logs server --tail=100
 
-      # ── Route discovery: find out what URLs actually exist ──────
-      # This step is purely diagnostic — it tells us the real URL structure
-      # so we know exactly what paths to test
-      - name: Discover available API routes
+      # Poll until the API actually responds — handles slow migration on first boot
+      - name: Wait for API to respond
         run: |
-          echo "=== Testing common root paths ==="
-          for PATH in "/" "/api/" "/api/v1/" "/api/v2/" "/admin/"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016$PATH 2>/dev/null || echo "000")
-            echo "  http://localhost:8016$PATH  →  HTTP $STATUS"
-          done
-
-          echo ""
-          echo "=== Full response body from / ==="
-          curl -s http://localhost:8016/ | head -50
-
-          echo ""
-          echo "=== Full response body from /api/ ==="
-          curl -s http://localhost:8016/api/ | head -100
-
-      - name: Wait for API to be fully ready
-        run: |
-          echo "Polling for any 200/301/302 response on port 8016..."
-          for i in {1..24}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/ 2>/dev/null || echo "000")
-            echo "Attempt $i/24: HTTP $STATUS at /"
+          echo "Polling http://localhost:8016/ ..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            echo "Attempt ${i}/30: HTTP ${STATUS}"
             if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ Server is responding (HTTP $STATUS)"
-              break
+              echo "✅ API is responding (HTTP ${STATUS})"
+              exit 0
             fi
             sleep 5
-            if [ $i -eq 24 ]; then
-              echo "❌ Server never responded. Final logs:"
-              docker compose logs server --tail=150
-              exit 1
-            fi
+          done
+          echo "❌ API never responded. Final backend logs:"
+          docker compose logs server --tail=150
+          exit 1
+
+      # Log all route statuses — this output is your screenshot evidence for Deliverable 3
+      - name: Discover and log API routes
+        run: |
+          echo "=== Endpoint status map ==="
+          for EP in "/" "/api/" "/admin/" "/api/adventures/" "/api/collections/" \
+                    "/api/auth/login/" "/api/users/me/" "/api/countries/" "/api/regions/"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
+              http://localhost:8016${EP} 2>/dev/null || echo "000")
+            echo "  http://localhost:8016${EP}  →  HTTP ${STATUS}"
           done
 
-      # ── Smoke test 1: Server is alive ───────────────────────────
-      - name: "Smoke test 1: Server responds on port 8016"
+          echo ""
+          echo "=== /api/ response body ==="
+          curl -s --connect-timeout 5 http://localhost:8016/api/ \
+            | python3 -m json.tool 2>/dev/null \
+            || curl -s --connect-timeout 5 http://localhost:8016/api/
+
+      # ── Smoke Tests ──────────────────────────────────────────────
+
+      - name: "Smoke test 1: Server is alive on port 8016"
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/)
-          echo "HTTP $STATUS"
-          if [ "$STATUS" = "000" ]; then
-            echo "❌ FAIL — no response at all (connection refused)"
-            exit 1
-          fi
-          echo "✅ PASS — server is alive and returned HTTP $STATUS"
+          echo "HTTP ${STATUS}"
+          [ "$STATUS" != "000" ] \
+            && echo "✅ PASS — server alive (HTTP ${STATUS})" \
+            || { echo "❌ FAIL — no response"; exit 1; }
 
-      # ── Smoke test 2: Discover and test the adventures endpoint ─
-      # We try both /api/adventures/ and /api/v1/adventures/ and report
-      # whichever one exists — and verify it blocks unauthenticated access
-      - name: "Smoke test 2: Adventures endpoint blocks unauthenticated access"
-        run: |
-          FOUND=false
-
-          for ENDPOINT in "/api/adventures/" "/api/v1/adventures/" "/adventures/"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016$ENDPOINT 2>/dev/null || echo "000")
-            echo "  $ENDPOINT → HTTP $STATUS"
-
-            if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-              echo "✅ PASS — $ENDPOINT correctly blocks unauthenticated access (HTTP $STATUS)"
-              FOUND=true
-              break
-            elif [ "$STATUS" = "200" ]; then
-              # 200 on adventures without auth would be a security issue — but
-              # some APIs return 200 with empty list. Let's note it but not fail.
-              echo "⚠️  WARNING — $ENDPOINT returned 200 without auth. Check if this is expected."
-              FOUND=true
-              break
-            fi
-          done
-
-          if [ "$FOUND" = "false" ]; then
-            echo "❌ FAIL — adventures endpoint not found at any expected path (all returned 404/000)"
-            echo "  Run the 'Discover available API routes' step output above to find the correct path"
-            exit 1
-          fi
-
-      # ── Smoke test 3: Admin panel exists ────────────────────────
-      - name: "Smoke test 3: Django admin panel is accessible"
+      - name: "Smoke test 2: Django admin panel accessible"
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
-          echo "HTTP $STATUS"
+          echo "HTTP ${STATUS}"
           if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-            echo "✅ PASS — admin panel reachable (HTTP $STATUS)"
+            echo "✅ PASS — admin panel reachable (HTTP ${STATUS})"
           else
-            echo "❌ FAIL — /admin/ returned $STATUS"
+            echo "❌ FAIL — /admin/ returned ${STATUS}"
             exit 1
           fi
 
-      # ── Smoke test 4: Try to login with wrong credentials ───────
-      # A 400 or 401 means the endpoint exists and is validating
-      # A 404 means we have the wrong login URL
-      - name: "Smoke test 4: Auth login endpoint exists"
+      - name: "Smoke test 3: Adventures endpoint requires authentication"
         run: |
-          FOUND=false
-
-          for ENDPOINT in "/api/auth/login/" "/api/v1/auth/login/" "/api/_allauth/browser/v1/auth/login" "/auth/login/"; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-              -X POST http://localhost:8016$ENDPOINT \
-              -H "Content-Type: application/json" \
-              -d '{"username":"wrong","password":"wrong"}' 2>/dev/null || echo "000")
-            echo "  $ENDPOINT → HTTP $STATUS"
-
-            if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "405" ] || [ "$STATUS" = "403" ]; then
-              echo "✅ PASS — login endpoint found at $ENDPOINT (HTTP $STATUS)"
-              FOUND=true
-              break
-            fi
-          done
-
-          if [ "$FOUND" = "false" ]; then
-            echo "⚠️  WARNING — login endpoint not found at any known path."
-            echo "  This is non-fatal — check the route discovery output above."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/adventures/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth (check if public listing is intentional)"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
           fi
 
-      # ── Save all logs ────────────────────────────────────────────
+      - name: "Smoke test 4: Login endpoint exists and rejects bad credentials"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST http://localhost:8016/api/auth/login/ \
+            -H "Content-Type: application/json" \
+            -d '{"username":"wrong","password":"wrong"}')
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ] || [ "$STATUS" = "405" ]; then
+            echo "✅ PASS — login endpoint exists and validates (HTTP ${STATUS})"
+          elif [ "$STATUS" = "404" ]; then
+            echo "❌ FAIL — login endpoint missing at /api/auth/login/"
+            exit 1
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
+
+      - name: "Smoke test 5: User profile endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/users/me/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — /api/users/me/ requires auth (HTTP ${STATUS})"
+          else
+            echo "❌ FAIL — expected 401/403, got ${STATUS}"
+            exit 1
+          fi
+
+      - name: "Smoke test 6: Collections endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/collections/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — /api/collections/ requires auth (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
+
+      # ── Save artifacts ────────────────────────────────────────────
+
       - name: Save container logs
         if: always()
         run: |
           mkdir -p qa/reports
-          docker compose logs         > qa/reports/all-containers.log 2>&1
-          docker compose logs server  > qa/reports/backend.log        2>&1
-          docker compose logs db      > qa/reports/database.log       2>&1
+          docker compose logs        > qa/reports/all-containers.log 2>&1
+          docker compose logs server > qa/reports/backend.log        2>&1
+          docker compose logs db     > qa/reports/database.log       2>&1
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
