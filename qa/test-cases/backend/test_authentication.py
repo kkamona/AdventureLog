@@ -161,6 +161,14 @@ class MockUser:
         self.id = user_id
         self.is_authenticated = is_authenticated
 
+    def __eq__(self, other):
+        if not isinstance(other, MockUser):
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
 
 class MockRequest:
     def __init__(self, user, method="GET"):
