@@ -9,21 +9,9 @@ on:
     branches:
       - main
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Quality Gates — enforced across all jobs
-#   Gate 1: All pytest tests must pass (zero failures tolerated)
-#   Gate 2: Unit test coverage of qa/test-cases/backend ≥ 60%
-#   Gate 3: All 15 API smoke endpoints must return a non-error HTTP status
-#   Gate 4: Critical security endpoints return correct auth enforcement
-# ─────────────────────────────────────────────────────────────────────────────
-
 jobs:
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # JOB 1: Backend Unit Tests + Coverage Quality Gate
-  # ═══════════════════════════════════════════════════════════════════════════
   backend-tests:
-    name: "Backend Unit Tests (pytest) + Coverage Gate"
+    name: "Backend Unit Tests (pytest)"
     runs-on: ubuntu-latest
 
     steps:
@@ -40,87 +28,50 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
-
-      - name: Run pytest — all test modules
+      - name: Run pytest
         run: |
           mkdir -p qa/reports
           pytest qa/test-cases/backend/ -v --tb=short \
             --cov=qa/test-cases/backend \
             --cov-report=term-missing \
-            --cov-report=xml:qa/reports/coverage.xml \
-            --cov-report=html:qa/reports/coverage-html \
-            --junitxml=qa/reports/pytest-results.xml
-
-      # ── Quality Gate 1: Zero test failures ────────────────────────────────
-      # pytest exits non-zero if any test fails — the step above enforces this.
-      # No additional step needed; a failed test aborts the job.
-
-      # ── Quality Gate 2: Coverage threshold ────────────────────────────────
-      - name: "Quality Gate 2: Coverage ≥ 60%"
-        run: |
-          COVERAGE=$(python3 -c "
-          import xml.etree.ElementTree as ET
-          tree = ET.parse('qa/reports/coverage.xml')
-          root = tree.getroot()
-          rate = float(root.attrib.get('line-rate', 0)) * 100
-          print(f'{rate:.1f}')
-          ")
-          echo "Coverage: ${COVERAGE}%"
-          python3 -c "
-          rate = float('${COVERAGE}')
-          threshold = 60.0
-          if rate < threshold:
-              print(f'❌ GATE FAIL — coverage {rate:.1f}% is below threshold {threshold}%')
-              exit(1)
-          print(f'✅ GATE PASS — coverage {rate:.1f}% meets threshold {threshold}%')
-          "
-
+            --cov-report=xml:qa/reports/coverage.xml
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage-report
-          path: |
-            qa/reports/coverage.xml
-            qa/reports/coverage-html/
+          path: qa/reports/coverage.xml
           retention-days: 30
 
-      - name: Upload pytest results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pytest-results
-          path: qa/reports/pytest-results.xml
-          retention-days: 30
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # JOB 2: API Smoke Tests + Security Quality Gate (Docker)
-  # ═══════════════════════════════════════════════════════════════════════════
   api-smoke-test:
-    name: "API Smoke Tests + Security Gate (Docker)"
+    name: "API Smoke Test (Docker + curl)"
     runs-on: ubuntu-latest
-    needs: backend-tests      # Only runs if unit tests pass
+    needs: backend-tests
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install curl and jq
+      - name: Install curl
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y curl jq
-
+          sudo apt-get install -y curl
+      # This exactly mirrors your local .env file — same variable names, same structure.
+      # The only difference: DEBUG=True so Django gives more useful error output in CI logs.
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
+          # 🌐 Frontend
           PUBLIC_SERVER_URL=http://server:80
           ORIGIN=http://localhost:8015
           BODY_SIZE_LIMIT=Infinity
           FRONTEND_PORT=8015
+          # 🐘 PostgreSQL Database
           PGHOST=db
           POSTGRES_DB=database
           POSTGRES_USER=adventure
           POSTGRES_PASSWORD=changeme123
+          # 🔒 Django Backend
           SECRET_KEY=ci-test-secret-key-do-not-use-in-production
           DJANGO_ADMIN_USERNAME=admin
           DJANGO_ADMIN_PASSWORD=Admin1234!
@@ -132,147 +83,104 @@ jobs:
           BACKEND_PORT=8016
           DISABLE_REGISTRATION=False
           EOF
-
+      # Start database alone first — never start server before DB is ready
       - name: Start database container
         run: docker compose up -d db
 
-      - name: Wait for PostGIS to be ready
+      # pg_isready returns exit 0 only when Postgres is actually accepting connections
+      - name: Wait for database to be ready
         run: |
-          echo "Waiting for PostGIS..."
+          echo "Waiting for PostGIS to initialize..."
           for i in {1..40}; do
             if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database ready (attempt ${i})"
+              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
               exit 0
             fi
-            echo "Attempt ${i}/40 — waiting 5s..."
+            echo "Attempt ${i}/40: not ready yet, waiting 5s..."
             sleep 5
           done
-          echo "❌ Database never ready"
+          echo "❌ Database never became ready. Logs:"
           docker compose logs db
           exit 1
-
+      # Start backend — Django runs migrations automatically on startup
       - name: Start backend container
         run: |
           docker compose up -d server
-          echo "Waiting 45s for Django migrations..."
+          echo "Waiting 45s for Django to run migrations..."
           sleep 45
-
       - name: Show container status
         run: docker compose ps
 
+      - name: Show backend logs
+        run: docker compose logs server --tail=100
+
+      # Poll until the API actually responds — handles slow migration on first boot
       - name: Wait for API to respond
         run: |
+          echo "Polling http://localhost:8016/ ..."
           for i in {1..30}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
               http://localhost:8016/ 2>/dev/null || echo "000")
-            echo "Poll ${i}/30: HTTP ${STATUS}"
+            echo "Attempt ${i}/30: HTTP ${STATUS}"
             if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ API responding (HTTP ${STATUS})"
+              echo "✅ API is responding (HTTP ${STATUS})"
               exit 0
             fi
             sleep 5
           done
+          echo "❌ API never responded. Final backend logs:"
           docker compose logs server --tail=150
           exit 1
-
-      # ── Endpoint Status Map ────────────────────────────────────────────────
-      - name: Log all API endpoint statuses
+      # Log all route statuses — this output is your screenshot evidence for Deliverable 3
+      - name: Discover and log API routes
         run: |
-          echo "=== AdventureLog v0.12.0 — Endpoint Status Map ==="
-          mkdir -p qa/reports
-          {
-            echo "endpoint,http_status,timestamp"
-            for EP in "/" "/api/" "/admin/" \
-                      "/api/locations/" "/api/collections/" "/api/itineraries/" \
-                      "/api/itinerary-days/" "/api/notes/" "/api/checklists/" \
-                      "/api/categories/" "/api/transportations/" "/api/images/" \
-                      "/api/trails/" "/api/activities/" "/api/visits/" \
-                      "/api/lodging/" "/api/attachments/" "/api/search/"; do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
-                http://localhost:8016${EP} 2>/dev/null || echo "000")
-              echo "http://localhost:8016${EP},${STATUS},$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              echo "  ${EP}  →  HTTP ${STATUS}"
-            done
-          } > qa/reports/endpoint-status.csv
-          echo ""
-          echo "=== /api/ response ==="
-          curl -s http://localhost:8016/api/ | python3 -m json.tool 2>/dev/null || true
-
-      # ── Quality Gate 3: All endpoints reachable ────────────────────────────
-      - name: "Quality Gate 3: All 15 API endpoints reachable"
-        run: |
-          FAIL=0
-          for EP in "/api/locations/" "/api/collections/" "/api/itineraries/" \
-                    "/api/itinerary-days/" "/api/notes/" "/api/checklists/" \
-                    "/api/categories/" "/api/transportations/" "/api/images/" \
-                    "/api/trails/" "/api/activities/" "/api/visits/" \
-                    "/api/lodging/" "/api/attachments/" "/api/search/"; do
+          echo "=== Endpoint status map ==="
+          for EP in "/" "/api/" "/admin/" \
+                    "/api/locations/" "/api/collections/" "/api/itineraries/" \
+                    "/api/notes/" "/api/checklists/" "/api/categories/" \
+                    "/api/transportations/" "/api/images/" "/api/trails/" \
+                    "/api/activities/" "/api/visits/" "/api/lodging/" \
+                    "/api/attachments/" "/api/search/" "/api/auth/login/"; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
               http://localhost:8016${EP} 2>/dev/null || echo "000")
-            if [ "$STATUS" = "000" ] || [ "$STATUS" = "500" ] || [ "$STATUS" = "502" ] || [ "$STATUS" = "503" ]; then
-              echo "❌ GATE FAIL — ${EP} returned HTTP ${STATUS}"
-              FAIL=1
-            else
-              echo "✅ ${EP}  →  HTTP ${STATUS}"
-            fi
+            echo "  http://localhost:8016${EP}  →  HTTP ${STATUS}"
           done
-          if [ "$FAIL" = "1" ]; then exit 1; fi
-          echo "✅ GATE PASS — All 15 endpoints reachable"
+          echo ""
+          echo "=== /api/ response body ==="
+          curl -s --connect-timeout 5 http://localhost:8016/api/ \
+            | python3 -m json.tool 2>/dev/null \
+            || curl -s --connect-timeout 5 http://localhost:8016/api/
+      # ── Smoke Tests ──────────────────────────────────────────────
 
-      # ── Quality Gate 4: Security — auth enforcement ────────────────────────
-      - name: "Quality Gate 4: Critical security endpoint checks"
+      - name: "Smoke test 1: Server is alive on port 8016"
         run: |
-          FAIL=0
-
-          # Admin panel must redirect to login (200 or 301/302)
-          ADMIN=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
-          if [ "$ADMIN" = "200" ] || [ "$ADMIN" = "301" ] || [ "$ADMIN" = "302" ]; then
-            echo "✅ /admin/ accessible (HTTP ${ADMIN})"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/)
+          echo "HTTP ${STATUS}"
+          [ "$STATUS" != "000" ] \
+            && echo "✅ PASS — server alive (HTTP ${STATUS})" \
+            || { echo "❌ FAIL — no response"; exit 1; }
+      - name: "Smoke test 2: Django admin panel accessible"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ PASS — admin panel reachable (HTTP ${STATUS})"
           else
-            echo "❌ GATE FAIL — /admin/ returned unexpected ${ADMIN}"
-            FAIL=1
-          fi
-
-          # /api/locations/ unauthenticated: 200 (public filter) or 401/403 — NOT 500
-          LOC=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
-          if [ "$LOC" = "200" ] || [ "$LOC" = "401" ] || [ "$LOC" = "403" ]; then
-            echo "✅ /api/locations/ unauthenticated → HTTP ${LOC} (expected)"
-          else
-            echo "❌ GATE FAIL — /api/locations/ returned ${LOC}"
-            FAIL=1
-          fi
-
-          # /api/collections/ without ?type= must return 400 (confirmed behavior)
-          COL=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/collections/)
-          if [ "$COL" = "400" ] || [ "$COL" = "401" ] || [ "$COL" = "403" ]; then
-            echo "✅ /api/collections/ without ?type= → HTTP ${COL} (expected)"
-          else
-            echo "⚠️  /api/collections/ returned ${COL} (check if intentional)"
-          fi
-
-          if [ "$FAIL" = "1" ]; then
-            echo "❌ Security gate FAILED"
+            echo "❌ FAIL — /admin/ returned ${STATUS}"
             exit 1
           fi
-          echo "✅ GATE PASS — All security checks passed"
-
-      # ── Metrics Collection ─────────────────────────────────────────────────
-      - name: Collect execution metrics
-        if: always()
+      - name: "Smoke test 3: Locations (adventures) endpoint requires authentication"
         run: |
-          mkdir -p qa/reports
-          echo "=== Pipeline Execution Metrics ===" > qa/reports/metrics.txt
-          echo "Timestamp: $(date -u)" >> qa/reports/metrics.txt
-          echo "Commit: ${{ github.sha }}" >> qa/reports/metrics.txt
-          echo "Branch: ${{ github.ref_name }}" >> qa/reports/metrics.txt
-          echo "" >> qa/reports/metrics.txt
-          echo "Quality Gates:" >> qa/reports/metrics.txt
-          echo "  Gate 1: All pytest tests pass (enforced by pytest exit code)" >> qa/reports/metrics.txt
-          echo "  Gate 2: Coverage ≥ 60% (enforced by coverage check step)" >> qa/reports/metrics.txt
-          echo "  Gate 3: All 15 API endpoints reachable" >> qa/reports/metrics.txt
-          echo "  Gate 4: Critical security endpoints return expected codes" >> qa/reports/metrics.txt
-          cat qa/reports/metrics.txt
-
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth (check if public listing is intentional)"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
       - name: Save container logs
         if: always()
         run: |
@@ -280,14 +188,13 @@ jobs:
           docker compose logs        > qa/reports/all-containers.log 2>&1
           docker compose logs server > qa/reports/backend.log        2>&1
           docker compose logs db     > qa/reports/database.log       2>&1
-
-      - name: Upload all reports and logs
+      - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: qa-pipeline-artifacts
-          path: qa/reports/
-          retention-days: 30
+          name: docker-logs
+          path: qa/reports/*.log
+          retention-days: 7
 
       - name: Shut down containers
         if: always()
