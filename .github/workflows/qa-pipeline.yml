@@ -56,22 +56,21 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y curl
-      # This exactly mirrors your local .env file — same variable names, same structure.
-      # The only difference: DEBUG=True so Django gives more useful error output in CI logs.
+      
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
-          # 🌐 Frontend
+          # Frontend
           PUBLIC_SERVER_URL=http://server:80
           ORIGIN=http://localhost:8015
           BODY_SIZE_LIMIT=Infinity
           FRONTEND_PORT=8015
-          # 🐘 PostgreSQL Database
+          # PostgreSQL Database
           PGHOST=db
           POSTGRES_DB=database
           POSTGRES_USER=adventure
           POSTGRES_PASSWORD=changeme123
-          # 🔒 Django Backend
+          # Django Backend
           SECRET_KEY=ci-test-secret-key-do-not-use-in-production
           DJANGO_ADMIN_USERNAME=admin
           DJANGO_ADMIN_PASSWORD=Admin1234!
@@ -83,11 +82,10 @@ jobs:
           BACKEND_PORT=8016
           DISABLE_REGISTRATION=False
           EOF
-      # Start database alone first — never start server before DB is ready
+    
       - name: Start database container
         run: docker compose up -d db
 
-      # pg_isready returns exit 0 only when Postgres is actually accepting connections
       - name: Wait for database to be ready
         run: |
           echo "Waiting for PostGIS to initialize..."
@@ -102,7 +100,7 @@ jobs:
           echo "❌ Database never became ready. Logs:"
           docker compose logs db
           exit 1
-      # Start backend — Django runs migrations automatically on startup
+
       - name: Start backend container
         run: |
           docker compose up -d server
@@ -114,7 +112,7 @@ jobs:
       - name: Show backend logs
         run: docker compose logs server --tail=100
 
-      # Poll until the API actually responds — handles slow migration on first boot
+      
       - name: Wait for API to respond
         run: |
           echo "Polling http://localhost:8016/ ..."
@@ -131,7 +129,7 @@ jobs:
           echo "❌ API never responded. Final backend logs:"
           docker compose logs server --tail=150
           exit 1
-      # Log all route statuses — this output is your screenshot evidence for Deliverable 3
+     
       - name: Discover and log API routes
         run: |
           echo "=== Endpoint status map ==="
@@ -150,7 +148,7 @@ jobs:
           curl -s --connect-timeout 5 http://localhost:8016/api/ \
             | python3 -m json.tool 2>/dev/null \
             || curl -s --connect-timeout 5 http://localhost:8016/api/
-      # ── Smoke Tests ──────────────────────────────────────────────
+      
 
       - name: "Smoke test 1: Server is alive on port 8016"
         run: |
