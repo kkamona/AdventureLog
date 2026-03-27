@@ -251,7 +251,11 @@ jobs:
 
       - name: Install Node dependencies
         working-directory: ./frontend
-        run: npm ci --force
+        run: npm ci --legacy-peer-deps
+
+      - name: Verify Playwright installation
+        working-directory: ./frontend
+        run: npx playwright --version
 
       - name: Install Playwright browsers
         working-directory: ./frontend
@@ -340,10 +344,11 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
         run: |
-          mkdir -p ../qa/reports
+          mkdir -p qa/reports
           npx playwright test \
             --config=playwright.config.ts \
-            --reporter=list,html,junit
+            --reporter=html,junit \
+            --output=qa/reports
 
       # ── QG-5: soft duration warning ───────────────────────────────────────
       - name: Check E2E suite duration (QG-5 soft warning)
@@ -377,7 +382,7 @@ jobs:
         if: always()
         with:
           name: playwright-html-report
-          path: qa/reports/playwright-report/
+          path: qa/reports
           retention-days: 30
 
       - name: Upload Playwright JUnit results
