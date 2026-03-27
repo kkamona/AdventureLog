@@ -336,13 +336,12 @@ jobs:
       # ── Run Playwright (QG-1 and QG-2 enforced here) ─────────────────────
       - name: Run Playwright E2E tests
         working-directory: ./frontend
-        id: playwright_run
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
         run: |
           mkdir -p ../qa/reports
-          npx playwright test ../qa/test-cases/e2e \
+          npx playwright test "../qa/test-cases/e2e/**/*.spec.ts" \
             --config=playwright.config.ts \
             --reporter=list,html,junit
 
