@@ -248,25 +248,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          # Both package-lock files are listed so the cache key covers both
-          # install locations (frontend/ for the app, qa/ for test imports)
-          cache-dependency-path: |
-            frontend/package-lock.json
-            qa/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install frontend Node dependencies
+      - name: Install Node dependencies
         working-directory: ./frontend
         run: npm ci --legacy-peer-deps
-
-      # FIX: test files live in qa/test-cases/e2e/ and import from
-      # '@playwright/test'. Node resolves modules by walking UP from the
-      # importing file — so it looks in qa/node_modules/, then root
-      # node_modules/, and never reaches frontend/node_modules/.
-      # Installing @playwright/test in qa/ makes it resolvable from the
-      # test files' own directory tree.
-      - name: Install QA Node dependencies
-        working-directory: ./qa
-        run: npm install --save-dev @playwright/test
 
       - name: Verify Playwright installation
         working-directory: ./frontend
@@ -275,6 +261,20 @@ jobs:
       - name: Install Playwright browsers
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
+
+      # FIX: The spec files in qa/test-cases/e2e/ import '@playwright/test',
+      # but @playwright/test is only installed in frontend/node_modules/.
+      # Node resolves imports by walking UP from the importing file's directory
+      # — so it never finds a sibling folder like frontend/node_modules/.
+      #
+      # The correct fix is NOT a second install (that causes a "required second
+      # time" singleton conflict because the runner already loaded it from
+      # frontend/node_modules and the specs then load a second instance).
+      # Instead, NODE_PATH tells Node to treat frontend/node_modules as a
+      # global fallback lookup dir. Every process in this job — including the
+      # spec file loader — resolves @playwright/test to the same single copy.
+      - name: Export NODE_PATH so qa specs resolve @playwright/test
+        run: echo "NODE_PATH=${{ github.workspace }}/frontend/node_modules" >> "$GITHUB_ENV"
 
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
