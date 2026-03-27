@@ -358,7 +358,7 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
-        run: npx playwright test --config=playwright.config.ts
+        run: npx playwright test --config=qa/playwright.config.ts
 
       # ── QG-5: soft duration warning ───────────────────────────────────────
       - name: Check E2E suite duration (QG-5 soft warning)
