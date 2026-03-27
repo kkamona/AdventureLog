@@ -247,6 +247,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Node dependencies
+        working-directory: ./frontend
         run: npm ci
 
       - name: Install Playwright Chromium browser + system deps
