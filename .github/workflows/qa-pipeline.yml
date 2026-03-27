@@ -44,11 +44,11 @@ jobs:
 
       - name: Run pytest
         run: |
-          mkdir -p qa/reports
-          pytest qa/test-cases/backend/ -v --tb=short \
-            --cov=qa/test-cases/backend \
+          mkdir -p frontend/qa/reports
+          pytest frontend/qa/test-cases/backend/ -v --tb=short \
+            --cov=frontend/qa/test-cases/backend \
             --cov-report=term-missing \
-            --cov-report=xml:qa/reports/coverage.xml \
+            --cov-report=xml:frontend/qa/reports/coverage.xml \
             --cov-fail-under=70
 
       - name: Upload coverage report
@@ -56,7 +56,7 @@ jobs:
         if: always()
         with:
           name: coverage-report
-          path: qa/reports/coverage.xml
+          path: frontend/qa/reports/coverage.xml
           retention-days: 30
 
   # -------------------------------------------------------------------------
@@ -206,17 +206,17 @@ jobs:
       - name: Save container logs
         if: always()
         run: |
-          mkdir -p qa/reports
-          docker compose logs        > qa/reports/all-containers.log 2>&1
-          docker compose logs server > qa/reports/backend.log        2>&1
-          docker compose logs db     > qa/reports/database.log       2>&1
+          mkdir -p frontend/qa/reports
+          docker compose logs        > frontend/qa/reports/all-containers.log 2>&1
+          docker compose logs server > frontend/qa/reports/backend.log        2>&1
+          docker compose logs db     > frontend/qa/reports/database.log       2>&1
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-logs
-          path: qa/reports/*.log
+          path: frontend/qa/reports/*.log
           retention-days: 7
 
       - name: Shut down containers
@@ -262,19 +262,9 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      # FIX: The spec files in qa/test-cases/e2e/ import '@playwright/test',
-      # but @playwright/test is only installed in frontend/node_modules/.
-      # Node resolves imports by walking UP from the importing file's directory
-      # — so it never finds a sibling folder like frontend/node_modules/.
-      #
-      # The correct fix is NOT a second install (that causes a "required second
-      # time" singleton conflict because the runner already loaded it from
-      # frontend/node_modules and the specs then load a second instance).
-      # Instead, NODE_PATH tells Node to treat frontend/node_modules as a
-      # global fallback lookup dir. Every process in this job — including the
-      # spec file loader — resolves @playwright/test to the same single copy.
-      - name: Export NODE_PATH so qa specs resolve @playwright/test
-        run: echo "NODE_PATH=${{ github.workspace }}/frontend/node_modules" >> "$GITHUB_ENV"
+      # qa/ now lives inside frontend/, so @playwright/test is found
+      # naturally by Node walking up to frontend/node_modules/ — no
+      # NODE_PATH workaround needed.
 
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
@@ -347,13 +337,11 @@ jobs:
           docker compose logs web --tail=80
           exit 1
 
-      # ── Pre-create report directories at repo root (not inside frontend/) ─
-      # FIX: must run at repo root BEFORE the playwright step so that the
-      # ../qa/reports paths in playwright.config.ts resolve correctly.
+      # ── Pre-create report directories inside frontend/qa/ ────────────────
       - name: Create report output directories
         run: |
-          mkdir -p qa/reports/playwright-report
-          mkdir -p qa/reports/test-results
+          mkdir -p frontend/qa/reports/playwright-report
+          mkdir -p frontend/qa/reports/test-results
 
       # ── Record suite start time (QG-5) ────────────────────────────────────
       - name: Record E2E suite start time
@@ -393,18 +381,18 @@ jobs:
       - name: Save container logs
         if: always()
         run: |
-          mkdir -p qa/reports
-          docker compose logs        > qa/reports/e2e-all-containers.log 2>&1
-          docker compose logs server > qa/reports/e2e-backend.log        2>&1
-          docker compose logs web    > qa/reports/e2e-frontend.log       2>&1
-          docker compose logs db     > qa/reports/e2e-database.log       2>&1
+          mkdir -p frontend/qa/reports
+          docker compose logs        > frontend/qa/reports/e2e-all-containers.log 2>&1
+          docker compose logs server > frontend/qa/reports/e2e-backend.log        2>&1
+          docker compose logs web    > frontend/qa/reports/e2e-frontend.log       2>&1
+          docker compose logs db     > frontend/qa/reports/e2e-database.log       2>&1
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-html-report
-          path: qa/reports/playwright-report/
+          path: frontend/qa/reports/playwright-report/
           retention-days: 30
 
       - name: Upload Playwright JUnit results
@@ -412,7 +400,7 @@ jobs:
         if: always()
         with:
           name: playwright-junit-results
-          path: qa/reports/playwright-results.xml
+          path: frontend/qa/reports/playwright-results.xml
           retention-days: 30
 
       - name: Upload Playwright test artifacts (screenshots / videos / traces)
@@ -420,7 +408,7 @@ jobs:
         if: failure()
         with:
           name: playwright-failure-artifacts
-          path: qa/reports/test-results/
+          path: frontend/qa/reports/test-results/
           retention-days: 30
 
       - name: Upload container logs
@@ -428,7 +416,7 @@ jobs:
         if: always()
         with:
           name: e2e-docker-logs
-          path: qa/reports/e2e-*.log
+          path: frontend/qa/reports/e2e-*.log
           retention-days: 7
 
       - name: Shut down containers

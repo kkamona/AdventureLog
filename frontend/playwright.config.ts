@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: '../qa/test-cases/e2e',
+  // qa/ is now a direct child of frontend/, so paths are relative (no ../)
+  testDir: './qa/test-cases/e2e',
 
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -9,8 +10,8 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   reporter: [
-    ['html', { outputFolder: '../qa/reports/playwright-report', open: 'never' }],
-    ['junit', { outputFile: '../qa/reports/playwright-results.xml' }],
+    ['html', { outputFolder: './qa/reports/playwright-report', open: 'never' }],
+    ['junit', { outputFile: './qa/reports/playwright-results.xml' }],
     ['list'],
   ],
 
@@ -23,7 +24,7 @@ export default defineConfig({
     actionTimeout: 15000,
   },
 
-  outputDir: '../qa/reports/test-results',
+  outputDir: './qa/reports/test-results',
 
   timeout: 60000,
 
