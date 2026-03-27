@@ -247,7 +247,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # FIX: scope npm cache to the frontend subdirectory where
+          # package-lock.json actually lives
           cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -259,7 +262,7 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: ./frontend
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
 
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
@@ -332,23 +335,30 @@ jobs:
           docker compose logs web --tail=80
           exit 1
 
+      # ── Pre-create report directories at repo root (not inside frontend/) ─
+      # FIX: must run at repo root BEFORE the playwright step so that the
+      # ../qa/reports paths in playwright.config.ts resolve correctly.
+      - name: Create report output directories
+        run: |
+          mkdir -p qa/reports/playwright-report
+          mkdir -p qa/reports/test-results
+
       # ── Record suite start time (QG-5) ────────────────────────────────────
       - name: Record E2E suite start time
         id: suite_start
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       # ── Run Playwright (QG-1 and QG-2 enforced here) ─────────────────────
+      # FIX: removed --reporter and --output CLI flags — they override the
+      # detailed reporter config in playwright.config.ts (output folders,
+      # XML filename) and redirect output to wrong locations.
+      # playwright.config.ts already defines all reporters correctly.
       - name: Run Playwright E2E tests
         working-directory: ./frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
-        run: |
-          mkdir -p qa/reports
-          npx playwright test \
-            --config=playwright.config.ts \
-            --reporter=html,junit \
-            --output=qa/reports
+        run: npx playwright test --config=playwright.config.ts
 
       # ── QG-5: soft duration warning ───────────────────────────────────────
       - name: Check E2E suite duration (QG-5 soft warning)
@@ -382,7 +392,7 @@ jobs:
         if: always()
         with:
           name: playwright-html-report
-          path: qa/reports
+          path: qa/reports/playwright-report/
           retention-days: 30
 
       - name: Upload Playwright JUnit results
