@@ -335,8 +335,8 @@ jobs:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
         run: |
-          mkdir -p qa/reports
-          npx playwright test \
+          mkdir -p ../qa/reports
+          npx playwright test ../qa/test-cases/e2e \
             --config=playwright.config.ts \
             --reporter=list,html,junit
 
