@@ -59,7 +59,166 @@ jobs:
           path: qa/reports/coverage.xml
           retention-days: 30
 
-  
+  # -------------------------------------------------------------------------
+  # JOB 2 – API Smoke Test (Docker + curl)   QG-4: 3 smoke checks
+  # -------------------------------------------------------------------------
+  api-smoke-test:
+    name: "API Smoke Test (Docker + curl)"
+    runs-on: ubuntu-latest
+    needs: backend-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install curl
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          # Frontend
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          # PostgreSQL Database
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          # Django Backend
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for PostGIS to initialize..."
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              exit 0
+            fi
+            echo "Attempt ${i}/40: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Database never became ready. Logs:"
+          docker compose logs db
+          exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for Django to run migrations..."
+          sleep 45
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Show backend logs
+        run: docker compose logs server --tail=100
+
+      - name: Wait for API to respond
+        run: |
+          echo "Polling http://localhost:8016/ ..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            echo "Attempt ${i}/30: HTTP ${STATUS}"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API is responding (HTTP ${STATUS})"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ API never responded. Final backend logs:"
+          docker compose logs server --tail=150
+          exit 1
+
+      - name: Discover and log API routes
+        run: |
+          echo "=== Endpoint status map ==="
+          for EP in "/" "/api/" "/admin/" \
+                    "/api/locations/" "/api/collections/" "/api/itineraries/" \
+                    "/api/notes/" "/api/checklists/" "/api/categories/" \
+                    "/api/transportations/" "/api/images/" "/api/trails/" \
+                    "/api/activities/" "/api/visits/" "/api/lodging/" \
+                    "/api/attachments/" "/api/search/" "/api/auth/login/"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
+              http://localhost:8016${EP} 2>/dev/null || echo "000")
+            echo "  http://localhost:8016${EP}  →  HTTP ${STATUS}"
+          done
+          echo ""
+          echo "=== /api/ response body ==="
+          curl -s --connect-timeout 5 http://localhost:8016/api/ \
+            | python3 -m json.tool 2>/dev/null \
+            || curl -s --connect-timeout 5 http://localhost:8016/api/
+
+      - name: "Smoke test 1: Server is alive on port 8016"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/)
+          echo "HTTP ${STATUS}"
+          [ "$STATUS" != "000" ] \
+            && echo "✅ PASS — server alive (HTTP ${STATUS})" \
+            || { echo "❌ FAIL — no response"; exit 1; }
+
+      - name: "Smoke test 2: Django admin panel accessible"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ PASS — admin panel reachable (HTTP ${STATUS})"
+          else
+            echo "❌ FAIL — /admin/ returned ${STATUS}"
+            exit 1
+          fi
+
+      - name: "Smoke test 3: Locations endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth (check if public listing is intentional)"
+          else
+            echo "❌ FAIL — unexpected ${STATUS}"
+            exit 1
+          fi
+
+      - name: Save container logs
+        if: always()
+        run: |
+          mkdir -p qa/reports
+          docker compose logs        > qa/reports/all-containers.log 2>&1
+          docker compose logs server > qa/reports/backend.log        2>&1
+          docker compose logs db     > qa/reports/database.log       2>&1
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: qa/reports/*.log
+          retention-days: 7
+
+      - name: Shut down containers
+        if: always()
+        run: docker compose down -v
 
   # -------------------------------------------------------------------------
   # JOB 3 – Playwright E2E Tests   QG-1, QG-2, QG-5
