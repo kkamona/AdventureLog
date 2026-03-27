@@ -341,7 +341,7 @@ jobs:
           CI: true
         run: |
           mkdir -p ../qa/reports
-          npx playwright test "../qa/test-cases/e2e/**/*.spec.ts" \
+          npx playwright test \
             --config=playwright.config.ts \
             --reporter=list,html,junit
 
