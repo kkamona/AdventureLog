@@ -247,14 +247,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # FIX: scope npm cache to the frontend subdirectory where
-          # package-lock.json actually lives
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          # Both package-lock files are listed so the cache key covers both
+          # install locations (frontend/ for the app, qa/ for test imports)
+          cache-dependency-path: |
+            frontend/package-lock.json
+            qa/package-lock.json
 
-      - name: Install Node dependencies
+      - name: Install frontend Node dependencies
         working-directory: ./frontend
         run: npm ci --legacy-peer-deps
+
+      # FIX: test files live in qa/test-cases/e2e/ and import from
+      # '@playwright/test'. Node resolves modules by walking UP from the
+      # importing file — so it looks in qa/node_modules/, then root
+      # node_modules/, and never reaches frontend/node_modules/.
+      # Installing @playwright/test in qa/ makes it resolvable from the
+      # test files' own directory tree.
+      - name: Install QA Node dependencies
+        working-directory: ./qa
+        run: npm install --save-dev @playwright/test
 
       - name: Verify Playwright installation
         working-directory: ./frontend

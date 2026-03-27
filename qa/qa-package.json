@@ -1,0 +1,9 @@
+{
+  "name": "adventurelog-qa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QA test dependencies for AdventureLog",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}
