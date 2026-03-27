@@ -35,8 +35,8 @@ import { test, expect, type Page } from '@playwright/test';
 // ─────────────────────────────────────────────────────────────────────────────
 // Credentials — match your .env file
 // ─────────────────────────────────────────────────────────────────────────────
-const VALID_USERNAME = 'kamona';
-const VALID_PASSWORD = '123456';
+const VALID_USERNAME = 'admin';
+const VALID_PASSWORD = 'admin';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Selectors — every value verified against source code
