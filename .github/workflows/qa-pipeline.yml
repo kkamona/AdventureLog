@@ -250,8 +250,9 @@ jobs:
         working-directory: ./frontend
         run: npm ci --force
 
-      - name: Install Playwright Chromium browser + system deps
-        run: npx playwright install chromium --with-deps
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
 
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
@@ -328,6 +329,7 @@ jobs:
 
       # ── Run Playwright (QG-1 and QG-2 enforced here) ─────────────────────
       - name: Run Playwright E2E tests
+        working-directory: ./frontend
         id: playwright_run
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
