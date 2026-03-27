@@ -102,6 +102,9 @@ jobs:
           DISABLE_REGISTRATION=False
           EOF
 
+      - name: Reset Docker auth
+        run: docker logout
+        
       - name: Start database container
         run: docker compose up -d db
 
