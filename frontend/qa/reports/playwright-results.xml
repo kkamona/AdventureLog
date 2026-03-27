@@ -1,114 +1,144 @@
-<testsuites id="" name="" tests="15" failures="2" skipped="0" errors="0" time="68.97462900000001">
-<testsuite name="auth.spec.ts" timestamp="2026-03-27T20:03:09.294Z" hostname="chromium" tests="15" failures="2" skipped="0" time="57.999" errors="0">
-<testcase name="TC-AUTH-01: valid credentials redirect to authenticated area" classname="auth.spec.ts" time="11.316">
-<failure message="auth.spec.ts:135:1 TC-AUTH-01: valid credentials redirect to authenticated area" type="FAILURE">
-<![CDATA[  [chromium] › auth.spec.ts:135:1 › TC-AUTH-01: valid credentials redirect to authenticated area ───
+<testsuites id="" name="" tests="10" failures="3" skipped="0" errors="0" time="95.476407">
+<testsuite name="mapping.spec.ts" timestamp="2026-03-27T20:52:53.299Z" hostname="chromium" tests="10" failures="3" skipped="0" time="89.576" errors="0">
+<testcase name="TC-MAP-01: /map page loads with heading and stat bar" classname="mapping.spec.ts" time="14.267">
+<failure message="mapping.spec.ts:127:1 TC-MAP-01: /map page loads with heading and stat bar" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:127:1 › TC-MAP-01: /map page loads with heading and stat bar ────────
 
     Error: expect(locator).toBeVisible() failed
 
-    Locator:  locator('a[href="/locations"]').first()
+    Locator:  locator('p.text-sm.text-base-content\\/60').first()
     Expected: visible
     Received: hidden
     Timeout:  8000ms
 
     Call log:
       - Expect "toBeVisible" with timeout 8000ms
-      - waiting for locator('a[href="/locations"]').first()
-        11 × locator resolved to <a href="/locations" class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl">…</a>
+      - waiting for locator('p.text-sm.text-base-content\\/60').first()
+        12 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
            - unexpected value "hidden"
 
 
-      148 |
-      149 |   // Navbar nav links only render when data.user is truthy — confirms session created
-    > 150 |   await expect(page.locator(SEL.navLocations).first()).toBeVisible({ timeout: 8_000 });
-          |                                                        ^
-      151 | });
-      152 |
-      153 | // =============================================================================
-        at C:\Users\a.eraly\AdventureLog\frontend\qa\test-cases\e2e\auth.spec.ts:150:56
+      127 | test('TC-MAP-01: /map page loads with heading and stat bar', async ({ page }) => {
+      128 |   await expect(page.locator(SEL.pageHeading)).toBeVisible({ timeout: 8_000 });
+    > 129 |   await expect(page.locator(SEL.statBar).first()).toBeVisible({ timeout: 8_000 });
+          |                                                   ^
+      130 | });
+      131 |
+      132 | // =============================================================================
+        at C:\Users\a.eraly\AdventureLog\frontend\qa\test-cases\e2e\mapping.spec.ts:129:51
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\auth-TC-AUTH-01-valid-cred-36738-irect-to-authenticated-area-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\auth-TC-AUTH-01-valid-cred-36738-irect-to-authenticated-area-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\auth-TC-AUTH-01-valid-cred-36738-irect-to-authenticated-area-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\auth-TC-AUTH-01-valid-cred-36738-irect-to-authenticated-area-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="TC-AUTH-02: wrong password shows alert-error and stays on /login" classname="auth.spec.ts" time="2.933">
+<testcase name="TC-MAP-02: map canvas is present and has non-zero dimensions" classname="mapping.spec.ts" time="6.017">
 </testcase>
-<testcase name="TC-AUTH-03: empty username stays on /login" classname="auth.spec.ts" time="3.963">
+<testcase name="TC-MAP-03: no JavaScript errors are thrown during map page load" classname="mapping.spec.ts" time="12.136">
 </testcase>
-<testcase name="TC-AUTH-04: empty password stays on /login" classname="auth.spec.ts" time="4.479">
+<testcase name="TC-MAP-04: Show Visited checkbox is present and toggleable" classname="mapping.spec.ts" time="5.781">
 </testcase>
-<testcase name="TC-AUTH-05: both fields empty stays on /login" classname="auth.spec.ts" time="4.412">
+<testcase name="TC-MAP-05: Show Planned checkbox is present and toggleable" classname="mapping.spec.ts" time="5.834">
 </testcase>
-<testcase name="TC-AUTH-06: authenticated user sees Locations, Collections and Map in navbar" classname="auth.spec.ts" time="11.644">
-<failure message="auth.spec.ts:219:1 TC-AUTH-06: authenticated user sees Locations, Collections and Map in navbar" type="FAILURE">
-<![CDATA[  [chromium] › auth.spec.ts:219:1 › TC-AUTH-06: authenticated user sees Locations, Collections and Map in navbar 
+<testcase name="TC-MAP-06: Show Regions checkbox is present and toggleable" classname="mapping.spec.ts" time="5.776">
+</testcase>
+<testcase name="TC-MAP-07: typing in search input updates the stat bar pin count" classname="mapping.spec.ts" time="11.728">
+<failure message="mapping.spec.ts:243:1 TC-MAP-07: typing in search input updates the stat bar pin count" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:243:1 › TC-MAP-07: typing in search input updates the stat bar pin count 
 
     Error: expect(locator).toBeVisible() failed
 
-    Locator:  locator('a[href="/locations"]').first()
+    Locator:  locator('p.text-sm.text-base-content\\/60').first()
     Expected: visible
     Received: hidden
-    Timeout:  8000ms
+    Timeout:  6000ms
 
     Call log:
-      - Expect "toBeVisible" with timeout 8000ms
-      - waiting for locator('a[href="/locations"]').first()
-        11 × locator resolved to <a href="/locations" class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl">…</a>
+      - Expect "toBeVisible" with timeout 6000ms
+      - waiting for locator('p.text-sm.text-base-content\\/60').first()
+        10 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
            - unexpected value "hidden"
 
 
-      222 |   await loginAs(page);
-      223 |
-    > 224 |   await expect(page.locator(SEL.navLocations).first()).toBeVisible({ timeout: 8_000 });
-          |                                                        ^
-      225 |   await expect(page.locator(SEL.navCollections).first()).toBeVisible({ timeout: 8_000 });
-      226 |   await expect(page.locator(SEL.navMap).first()).toBeVisible({ timeout: 8_000 });
-      227 | });
-        at C:\Users\a.eraly\AdventureLog\frontend\qa\test-cases\e2e\auth.spec.ts:224:56
+      244 |   // Read initial count from stat bar
+      245 |   const statBar = page.locator(SEL.statBar).first();
+    > 246 |   await expect(statBar).toBeVisible({ timeout: 6_000 });
+          |                         ^
+      247 |   const initialText = await statBar.textContent() ?? '';
+      248 |
+      249 |   // Type a query that is very unlikely to match any real location name
+        at C:\Users\a.eraly\AdventureLog\frontend\qa\test-cases\e2e\mapping.spec.ts:246:25
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\auth-TC-AUTH-06-authentica-c877d-llections-and-Map-in-navbar-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\auth-TC-AUTH-06-authentica-c877d-llections-and-Map-in-navbar-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\auth-TC-AUTH-06-authentica-c877d-llections-and-Map-in-navbar-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\auth-TC-AUTH-06-authentica-c877d-llections-and-Map-in-navbar-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="TC-AUTH-07: logout via Avatar dropdown redirects to login or home" classname="auth.spec.ts" time="5.094">
+<testcase name="TC-MAP-08: Add Location button opens dialog#my_modal_1" classname="mapping.spec.ts" time="6.259">
 </testcase>
-<testcase name="TC-AUTH-08: unauthenticated user visiting /locations is redirected to /login" classname="auth.spec.ts" time="2.424">
+<testcase name="TC-MAP-09: canvas is present after navigating away and returning to /map" classname="mapping.spec.ts" time="9.948">
 </testcase>
-<testcase name="TC-AUTH-09: unauthenticated user visiting /collections is redirected to /login" classname="auth.spec.ts" time="2.252">
-</testcase>
-<testcase name="TC-AUTH-10: signup page loads with all six required input fields" classname="auth.spec.ts" time="1.282">
-</testcase>
-<testcase name="TC-AUTH-11: mismatched passwords on signup shows alert-error" classname="auth.spec.ts" time="1.496">
-</testcase>
-<testcase name="TC-AUTH-12: duplicate username on signup shows alert-error" classname="auth.spec.ts" time="1.875">
-</testcase>
-<testcase name="TC-AUTH-13: login page Signup link navigates to /signup" classname="auth.spec.ts" time="1.613">
-</testcase>
-<testcase name="TC-AUTH-14: login page Forgot Password link navigates to /user/reset-password" classname="auth.spec.ts" time="1.313">
-</testcase>
-<testcase name="TC-AUTH-15: signup page Login link navigates back to /login" classname="auth.spec.ts" time="1.903">
+<testcase name="TC-MAP-10: clicking the Map link in the navbar navigates to /map" classname="mapping.spec.ts" time="11.83">
+<failure message="mapping.spec.ts:325:1 TC-MAP-10: clicking the Map link in the navbar navigates to /map" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:325:1 › TC-MAP-10: clicking the Map link in the navbar navigates to /map 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('a[href="/map"]').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  6000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 6000ms
+      - waiting for locator('a[href="/map"]').first()
+        10 × locator resolved to <a href="/map" class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl">…</a>
+           - unexpected value "hidden"
+
+
+      330 |   // Click the Map link in the desktop navbar
+      331 |   const mapLink = page.locator(SEL.navMap).first();
+    > 332 |   await expect(mapLink).toBeVisible({ timeout: 6_000 });
+          |                         ^
+      333 |   await mapLink.click();
+      334 |
+      335 |   await page.waitForURL('**/map**', { timeout: 8_000 });
+        at C:\Users\a.eraly\AdventureLog\frontend\qa\test-cases\e2e\mapping.spec.ts:332:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md]]
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>
