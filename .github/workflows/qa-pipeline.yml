@@ -248,7 +248,7 @@ jobs:
 
       - name: Install Node dependencies
         working-directory: ./frontend
-        run: npm ci
+        run: npm ci --force
 
       - name: Install Playwright Chromium browser + system deps
         run: npx playwright install chromium --with-deps
