@@ -282,6 +282,9 @@ jobs:
           EOF
 
       # ── Start full stack ──────────────────────────────────────────────────
+      - name: Reset Docker auth
+        run: docker logout
+        
       - name: Start database container
         run: docker compose up -d db
 
