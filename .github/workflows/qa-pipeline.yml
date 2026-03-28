@@ -44,11 +44,11 @@ jobs:
 
       - name: Run pytest
         run: |
-          mkdir -p frontend/qa/reports
-          pytest frontend/qa/test-cases/backend/ -v --tb=short \
-            --cov=frontend/qa/test-cases/backend \
+          mkdir -p frontend/reports
+          pytest frontend/test-cases/backend/ -v --tb=short \
+            --cov=frontend/test-cases/backend \
             --cov-report=term-missing \
-            --cov-report=xml:frontend/qa/reports/coverage.xml \
+            --cov-report=xml:frontend/reports/coverage.xml \
             --cov-fail-under=70
 
       - name: Upload coverage report
@@ -56,7 +56,7 @@ jobs:
         if: always()
         with:
           name: coverage-report
-          path: frontend/qa/reports/coverage.xml
+          path: frontend/reports/coverage.xml
           retention-days: 30
 
   # -------------------------------------------------------------------------
@@ -79,28 +79,25 @@ jobs:
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
-          # Frontend
-          PUBLIC_SERVER_URL=http://server:80
-          ORIGIN=http://localhost:8015
-          BODY_SIZE_LIMIT=Infinity
-          FRONTEND_PORT=8015
-          # PostgreSQL Database
-          PGHOST=db
-          POSTGRES_DB=database
-          POSTGRES_USER=adventure
-          POSTGRES_PASSWORD=changeme123
-          # Django Backend
-          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-          DJANGO_ADMIN_USERNAME=admin
-          DJANGO_ADMIN_PASSWORD=Admin1234!
-          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-          PUBLIC_URL=http://localhost:8016
-          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          DEBUG=True
-          FRONTEND_URL=http://localhost:8015
-          BACKEND_PORT=8016
-          DISABLE_REGISTRATION=False
-          EOF
+PUBLIC_SERVER_URL=http://server:80
+ORIGIN=http://localhost:8015
+BODY_SIZE_LIMIT=Infinity
+FRONTEND_PORT=8015
+PGHOST=db
+POSTGRES_DB=database
+POSTGRES_USER=adventure
+POSTGRES_PASSWORD=changeme123
+SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+DJANGO_ADMIN_USERNAME=admin
+DJANGO_ADMIN_PASSWORD=Admin1234!
+DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+PUBLIC_URL=http://localhost:8016
+CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+DEBUG=True
+FRONTEND_URL=http://localhost:8015
+BACKEND_PORT=8016
+DISABLE_REGISTRATION=False
+EOF
 
       - name: Reset Docker auth
         run: docker logout
@@ -206,17 +203,17 @@ jobs:
       - name: Save container logs
         if: always()
         run: |
-          mkdir -p frontend/qa/reports
-          docker compose logs        > frontend/qa/reports/all-containers.log 2>&1
-          docker compose logs server > frontend/qa/reports/backend.log        2>&1
-          docker compose logs db     > frontend/qa/reports/database.log       2>&1
+          mkdir -p frontend/reports
+          docker compose logs        > frontend/reports/all-containers.log 2>&1
+          docker compose logs server > frontend/reports/backend.log        2>&1
+          docker compose logs db     > frontend/reports/database.log       2>&1
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-logs
-          path: frontend/qa/reports/*.log
+          path: frontend/reports/*.log
           retention-days: 7
 
       - name: Shut down containers
@@ -262,33 +259,29 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
 
-      # qa/ now lives inside frontend/, so @playwright/test is found
-      # naturally by Node walking up to frontend/node_modules/ — no
-      # NODE_PATH workaround needed.
-
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
-          PUBLIC_SERVER_URL=http://server:80
-          ORIGIN=http://localhost:8015
-          BODY_SIZE_LIMIT=Infinity
-          FRONTEND_PORT=8015
-          PGHOST=db
-          POSTGRES_DB=database
-          POSTGRES_USER=adventure
-          POSTGRES_PASSWORD=changeme123
-          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-          DJANGO_ADMIN_USERNAME=admin
-          DJANGO_ADMIN_PASSWORD=Admin1234!
-          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-          PUBLIC_URL=http://localhost:8016
-          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          DEBUG=True
-          FRONTEND_URL=http://localhost:8015
-          BACKEND_PORT=8016
-          DISABLE_REGISTRATION=False
-          EOF
+PUBLIC_SERVER_URL=http://server:80
+ORIGIN=http://localhost:8015
+BODY_SIZE_LIMIT=Infinity
+FRONTEND_PORT=8015
+PGHOST=db
+POSTGRES_DB=database
+POSTGRES_USER=adventure
+POSTGRES_PASSWORD=changeme123
+SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+DJANGO_ADMIN_USERNAME=admin
+DJANGO_ADMIN_PASSWORD=Admin1234!
+DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+PUBLIC_URL=http://localhost:8016
+CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+DEBUG=True
+FRONTEND_URL=http://localhost:8015
+BACKEND_PORT=8016
+DISABLE_REGISTRATION=False
+EOF
 
       # ── Start full stack ──────────────────────────────────────────────────
       - name: Reset Docker auth
@@ -337,11 +330,11 @@ jobs:
           docker compose logs web --tail=80
           exit 1
 
-      # ── Pre-create report directories inside frontend/qa/ ────────────────
+      # ── Pre-create report directories ────────────────────────────────────
       - name: Create report output directories
         run: |
-          mkdir -p frontend/qa/reports/playwright-report
-          mkdir -p frontend/qa/reports/test-results
+          mkdir -p frontend/reports/playwright-report
+          mkdir -p frontend/reports
 
       # ── Record suite start time (QG-5) ────────────────────────────────────
       - name: Record E2E suite start time
@@ -349,16 +342,12 @@ jobs:
         run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
 
       # ── Run Playwright (QG-1 and QG-2 enforced here) ─────────────────────
-      # FIX: removed --reporter and --output CLI flags — they override the
-      # detailed reporter config in playwright.config.ts (output folders,
-      # XML filename) and redirect output to wrong locations.
-      # playwright.config.ts already defines all reporters correctly.
       - name: Run Playwright E2E tests
         working-directory: ./frontend
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:8015
           CI: true
-        run: npx playwright test --config=qa/playwright.config.ts
+        run: npx playwright test --config=playwright.config.ts
 
       # ── QG-5: soft duration warning ───────────────────────────────────────
       - name: Check E2E suite duration (QG-5 soft warning)
@@ -381,18 +370,18 @@ jobs:
       - name: Save container logs
         if: always()
         run: |
-          mkdir -p frontend/qa/reports
-          docker compose logs        > frontend/qa/reports/e2e-all-containers.log 2>&1
-          docker compose logs server > frontend/qa/reports/e2e-backend.log        2>&1
-          docker compose logs web    > frontend/qa/reports/e2e-frontend.log       2>&1
-          docker compose logs db     > frontend/qa/reports/e2e-database.log       2>&1
+          mkdir -p frontend/reports
+          docker compose logs        > frontend/reports/e2e-all-containers.log 2>&1
+          docker compose logs server > frontend/reports/e2e-backend.log        2>&1
+          docker compose logs web    > frontend/reports/e2e-frontend.log       2>&1
+          docker compose logs db     > frontend/reports/e2e-database.log       2>&1
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-html-report
-          path: frontend/qa/reports/playwright-report/
+          path: frontend/reports/playwright-report/
           retention-days: 30
 
       - name: Upload Playwright JUnit results
@@ -400,7 +389,7 @@ jobs:
         if: always()
         with:
           name: playwright-junit-results
-          path: frontend/qa/reports/playwright-results.xml
+          path: frontend/reports/playwright-results.xml
           retention-days: 30
 
       - name: Upload Playwright test artifacts (screenshots / videos / traces)
@@ -408,7 +397,7 @@ jobs:
         if: failure()
         with:
           name: playwright-failure-artifacts
-          path: frontend/qa/reports/test-results/
+          path: frontend/reports/
           retention-days: 30
 
       - name: Upload container logs
@@ -416,7 +405,7 @@ jobs:
         if: always()
         with:
           name: e2e-docker-logs
-          path: frontend/qa/reports/e2e-*.log
+          path: frontend/reports/e2e-*.log
           retention-days: 7
 
       - name: Shut down containers

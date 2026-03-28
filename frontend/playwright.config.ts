@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  // qa/ is now a direct child of frontend/, so paths are relative (no ../)
-  testDir: './test-cases/e2e',
+  testDir: '.',
+  testMatch: '**/*.spec.ts',
 
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -24,7 +24,7 @@ export default defineConfig({
     actionTimeout: 15000,
   },
 
-  outputDir: './reports/test-results',
+  outputDir: './reports',
 
   timeout: 60000,
 

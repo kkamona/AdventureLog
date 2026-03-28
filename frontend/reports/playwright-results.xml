@@ -1,0 +1,144 @@
+<testsuites id="" name="" tests="10" failures="3" skipped="0" errors="0" time="253.978746">
+<testsuite name="mapping.spec.ts" timestamp="2026-03-28T07:41:27.406Z" hostname="chromium" tests="10" failures="3" skipped="0" time="105.642" errors="0">
+<testcase name="TC-MAP-01: /map page loads with heading and stat bar" classname="mapping.spec.ts" time="15.629">
+<failure message="mapping.spec.ts:127:1 TC-MAP-01: /map page loads with heading and stat bar" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:127:1 › TC-MAP-01: /map page loads with heading and stat bar ────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('p.text-sm.text-base-content\\/60').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  8000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 8000ms
+      - waiting for locator('p.text-sm.text-base-content\\/60').first()
+        11 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
+           - unexpected value "hidden"
+
+
+      127 | test('TC-MAP-01: /map page loads with heading and stat bar', async ({ page }) => {
+      128 |   await expect(page.locator(SEL.pageHeading)).toBeVisible({ timeout: 8_000 });
+    > 129 |   await expect(page.locator(SEL.statBar).first()).toBeVisible({ timeout: 8_000 });
+          |                                                   ^
+      130 | });
+      131 |
+      132 | // =============================================================================
+        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:129:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    reports\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: reports\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC-MAP-02: map canvas is present and has non-zero dimensions" classname="mapping.spec.ts" time="7.706">
+</testcase>
+<testcase name="TC-MAP-03: no JavaScript errors are thrown during map page load" classname="mapping.spec.ts" time="14.847">
+</testcase>
+<testcase name="TC-MAP-04: Show Visited checkbox is present and toggleable" classname="mapping.spec.ts" time="6.862">
+</testcase>
+<testcase name="TC-MAP-05: Show Planned checkbox is present and toggleable" classname="mapping.spec.ts" time="7.024">
+</testcase>
+<testcase name="TC-MAP-06: Show Regions checkbox is present and toggleable" classname="mapping.spec.ts" time="6.938">
+</testcase>
+<testcase name="TC-MAP-07: typing in search input updates the stat bar pin count" classname="mapping.spec.ts" time="12.935">
+<failure message="mapping.spec.ts:243:1 TC-MAP-07: typing in search input updates the stat bar pin count" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:243:1 › TC-MAP-07: typing in search input updates the stat bar pin count 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('p.text-sm.text-base-content\\/60').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  6000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 6000ms
+      - waiting for locator('p.text-sm.text-base-content\\/60').first()
+        10 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
+           - unexpected value "hidden"
+
+
+      244 |   // Read initial count from stat bar
+      245 |   const statBar = page.locator(SEL.statBar).first();
+    > 246 |   await expect(statBar).toBeVisible({ timeout: 6_000 });
+          |                         ^
+      247 |   const initialText = await statBar.textContent() ?? '';
+      248 |
+      249 |   // Type a query that is very unlikely to match any real location name
+        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:246:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    reports\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: reports\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="TC-MAP-08: Add Location button opens dialog#my_modal_1" classname="mapping.spec.ts" time="8.142">
+</testcase>
+<testcase name="TC-MAP-09: canvas is present after navigating away and returning to /map" classname="mapping.spec.ts" time="12.059">
+</testcase>
+<testcase name="TC-MAP-10: clicking the Map link in the navbar navigates to /map" classname="mapping.spec.ts" time="13.5">
+<failure message="mapping.spec.ts:325:1 TC-MAP-10: clicking the Map link in the navbar navigates to /map" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:325:1 › TC-MAP-10: clicking the Map link in the navbar navigates to /map 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator:  locator('a[href="/map"]').first()
+    Expected: visible
+    Received: hidden
+    Timeout:  6000ms
+
+    Call log:
+      - Expect "toBeVisible" with timeout 6000ms
+      - waiting for locator('a[href="/map"]').first()
+        10 × locator resolved to <a href="/map" class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl">…</a>
+           - unexpected value "hidden"
+
+
+      330 |   // Click the Map link in the desktop navbar
+      331 |   const mapLink = page.locator(SEL.navMap).first();
+    > 332 |   await expect(mapLink).toBeVisible({ timeout: 6_000 });
+          |                         ^
+      333 |   await mapLink.click();
+      334 |
+      335 |   await page.waitForURL('**/map**', { timeout: 8_000 });
+        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:332:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    reports\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: reports\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>
