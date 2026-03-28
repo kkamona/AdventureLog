@@ -78,27 +78,28 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat > .env << 'EOF'
-PUBLIC_SERVER_URL=http://server:80
-ORIGIN=http://localhost:8015
-BODY_SIZE_LIMIT=Infinity
-FRONTEND_PORT=8015
-PGHOST=db
-POSTGRES_DB=database
-POSTGRES_USER=adventure
-POSTGRES_PASSWORD=changeme123
-SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-DJANGO_ADMIN_USERNAME=admin
-DJANGO_ADMIN_PASSWORD=Admin1234!
-DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-PUBLIC_URL=http://localhost:8016
-CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-DEBUG=True
-FRONTEND_URL=http://localhost:8015
-BACKEND_PORT=8016
-DISABLE_REGISTRATION=False
-EOF
+          {
+            echo "PUBLIC_SERVER_URL=http://server:80"
+            echo "ORIGIN=http://localhost:8015"
+            echo "BODY_SIZE_LIMIT=Infinity"
+            echo "FRONTEND_PORT=8015"
+            echo "PGHOST=db"
+            echo "POSTGRES_DB=database"
+            echo "POSTGRES_USER=adventure"
+            echo "POSTGRES_PASSWORD=changeme123"
+            echo "SECRET_KEY=ci-test-secret-key-do-not-use-in-production"
+            echo "DJANGO_ADMIN_USERNAME=admin"
+            echo "DJANGO_ADMIN_PASSWORD=Admin1234!"
+            echo "DJANGO_ADMIN_EMAIL=admin@adventurelog.qa"
+            echo "PUBLIC_URL=http://localhost:8016"
+            echo "CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015"
+            echo "DEBUG=True"
+            echo "FRONTEND_URL=http://localhost:8015"
+            echo "BACKEND_PORT=8016"
+            echo "DISABLE_REGISTRATION=False"
+          } > .env
 
+          
       - name: Reset Docker auth
         run: docker logout
         
@@ -262,26 +263,27 @@ EOF
       # ── Environment ───────────────────────────────────────────────────────
       - name: Create .env file
         run: |
-          cat > .env << 'EOF'
-PUBLIC_SERVER_URL=http://server:80
-ORIGIN=http://localhost:8015
-BODY_SIZE_LIMIT=Infinity
-FRONTEND_PORT=8015
-PGHOST=db
-POSTGRES_DB=database
-POSTGRES_USER=adventure
-POSTGRES_PASSWORD=changeme123
-SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-DJANGO_ADMIN_USERNAME=admin
-DJANGO_ADMIN_PASSWORD=Admin1234!
-DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-PUBLIC_URL=http://localhost:8016
-CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-DEBUG=True
-FRONTEND_URL=http://localhost:8015
-BACKEND_PORT=8016
-DISABLE_REGISTRATION=False
-EOF
+          {
+            echo "PUBLIC_SERVER_URL=http://server:80"
+            echo "ORIGIN=http://localhost:8015"
+            echo "BODY_SIZE_LIMIT=Infinity"
+            echo "FRONTEND_PORT=8015"
+            echo "PGHOST=db"
+            echo "POSTGRES_DB=database"
+            echo "POSTGRES_USER=adventure"
+            echo "POSTGRES_PASSWORD=changeme123"
+            echo "SECRET_KEY=ci-test-secret-key-do-not-use-in-production"
+            echo "DJANGO_ADMIN_USERNAME=admin"
+            echo "DJANGO_ADMIN_PASSWORD=Admin1234!"
+            echo "DJANGO_ADMIN_EMAIL=admin@adventurelog.qa"
+            echo "PUBLIC_URL=http://localhost:8016"
+            echo "CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015"
+            echo "DEBUG=True"
+            echo "FRONTEND_URL=http://localhost:8015"
+            echo "BACKEND_PORT=8016"
+            echo "DISABLE_REGISTRATION=False"
+          } > .env
+          
 
       # ── Start full stack ──────────────────────────────────────────────────
       - name: Reset Docker auth
