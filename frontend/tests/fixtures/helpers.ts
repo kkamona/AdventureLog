@@ -1,32 +1,27 @@
 import { type Page, expect, type APIRequestContext } from '@playwright/test';
 
-// ── Credentials – mirror the CI .env values ──────────────────────────────────
+// ── Credentials ───────────────────────────────────────────────────────────────
 export const ADMIN_USER = {
   username: process.env.TEST_ADMIN_USERNAME || 'admin',
   password: process.env.TEST_ADMIN_PASSWORD || 'Admin1234!'
 };
 
-// ── Application routes ────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 export const ROUTES = {
   home: '/',
   login: '/login',
   register: '/register',
   settings: '/settings',
-  locations: '/locations'
+  locations: '/locations',
+  collections: '/collections'
 } as const;
 
-// ── Backend base (used by API helpers) ───────────────────────────────────────
-export const BACKEND_URL =
-  process.env.BACKEND_URL || 'http://localhost:8016';
+export const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8016';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Browser helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Navigate to /login, fill the form and submit.
- * Handles the optional TOTP step automatically when `totp` is supplied.
- */
 export async function loginAs(
   page: Page,
   username: string,
@@ -35,11 +30,9 @@ export async function loginAs(
 ): Promise<void> {
   await page.goto(ROUTES.login);
   await page.waitForLoadState('networkidle');
-
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').first().click();
-
   if (totp) {
     const totpField = page.locator('input[name="totp"]');
     if (await totpField.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -49,81 +42,108 @@ export async function loginAs(
   }
 }
 
-/** Assert the user is authenticated (not on the login page). */
 export async function expectAuthenticated(page: Page): Promise<void> {
   await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 });
 }
 
-/** Assert the user has been redirected to login. */
 export async function expectUnauthenticated(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// API helpers  (used in beforeAll / afterAll hooks via request context)
+// API helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Fetch a CSRF token from the backend. */
 export async function getCsrfToken(request: APIRequestContext): Promise<string> {
   const res = await request.get(`${BACKEND_URL}/csrf/`);
-  const json = await res.json();
-  return json.csrfToken as string;
+  return ((await res.json()) as { csrfToken: string }).csrfToken;
 }
 
-/** Log in via the API and return the sessionid cookie value. */
 export async function apiLogin(
   request: APIRequestContext,
   username = ADMIN_USER.username,
   password = ADMIN_USER.password
 ): Promise<string> {
   const csrf = await getCsrfToken(request);
-
-  const res = await request.post(
-    `${BACKEND_URL}/auth/browser/v1/auth/login`,
-    {
-      data: { username, password },
-      headers: {
-        'X-CSRFToken': csrf,
-        'Content-Type': 'application/json',
-        Cookie: `csrftoken=${csrf}`,
-        Referer: BACKEND_URL
-      }
+  const res = await request.post(`${BACKEND_URL}/auth/browser/v1/auth/login`, {
+    data: { username, password },
+    headers: {
+      'X-CSRFToken': csrf,
+      'Content-Type': 'application/json',
+      Cookie: `csrftoken=${csrf}`,
+      Referer: BACKEND_URL
     }
-  );
-
-  // 200 = direct success, 401 = MFA step (session still valid for cleanup)
+  });
   if (res.status() !== 200 && res.status() !== 401) {
-    throw new Error(`API login failed with status ${res.status()}`);
+    throw new Error(`API login failed: ${res.status()}`);
   }
-
-  // Extract the sessionid from the Set-Cookie header
   const setCookie = res.headers()['set-cookie'] || '';
   const match = setCookie.match(/sessionid=([^;]+)/);
-  if (!match) {
-    throw new Error('No sessionid cookie after API login');
-  }
+  if (!match) throw new Error('No sessionid cookie after login');
   return match[1];
 }
 
-/**
- * Create a minimal test location via the API.
- * Returns the created location object (with .id).
- */
+// ── Location helpers ──────────────────────────────────────────────────────────
+
 export async function createTestLocation(
   request: APIRequestContext,
   sessionId: string,
   overrides: Record<string, unknown> = {}
 ): Promise<{ id: string; name: string; [key: string]: unknown }> {
   const csrf = await getCsrfToken(request);
+  const res = await request.post(`${BACKEND_URL}/api/locations/`, {
+    data: { name: `PW Loc ${Date.now()}`, is_public: true, is_visited: false, ...overrides },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `sessionid=${sessionId}; csrftoken=${csrf}`,
+      'X-CSRFToken': csrf,
+      Referer: BACKEND_URL
+    }
+  });
+  if (!res.ok()) throw new Error(`Create location failed: ${res.status()}`);
+  return res.json();
+}
 
+export async function deleteTestLocation(
+  request: APIRequestContext,
+  sessionId: string,
+  id: string
+): Promise<void> {
+  const csrf = await getCsrfToken(request);
+  await request.delete(`${BACKEND_URL}/api/locations/${id}/`, {
+    headers: {
+      Cookie: `sessionid=${sessionId}; csrftoken=${csrf}`,
+      'X-CSRFToken': csrf,
+      Referer: BACKEND_URL
+    }
+  });
+}
+
+// ── Collection helpers ────────────────────────────────────────────────────────
+
+export interface TestCollection {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Create a minimal test collection via the API.
+ * Pass `start_date` / `end_date` to create an itinerary-style collection.
+ */
+export async function createTestCollection(
+  request: APIRequestContext,
+  sessionId: string,
+  overrides: Record<string, unknown> = {}
+): Promise<TestCollection> {
+  const csrf = await getCsrfToken(request);
   const payload = {
-    name: `Playwright Test Location ${Date.now()}`,
+    name: `PW Collection ${Date.now()}`,
     is_public: true,
-    is_visited: false,
+    description: 'Created by Playwright tests.',
     ...overrides
   };
-
-  const res = await request.post(`${BACKEND_URL}/api/locations/`, {
+  const res = await request.post(`${BACKEND_URL}/api/collections/`, {
     data: payload,
     headers: {
       'Content-Type': 'application/json',
@@ -132,26 +152,23 @@ export async function createTestLocation(
       Referer: BACKEND_URL
     }
   });
-
   if (!res.ok()) {
     const body = await res.text();
-    throw new Error(`Failed to create test location (${res.status()}): ${body}`);
+    throw new Error(`Create collection failed (${res.status()}): ${body}`);
   }
-
   return res.json();
 }
 
 /**
- * Delete a location by ID via the API.
+ * Delete a collection by ID via the API.
  */
-export async function deleteTestLocation(
+export async function deleteTestCollection(
   request: APIRequestContext,
   sessionId: string,
-  locationId: string
+  id: string
 ): Promise<void> {
   const csrf = await getCsrfToken(request);
-
-  await request.delete(`${BACKEND_URL}/api/locations/${locationId}/`, {
+  await request.delete(`${BACKEND_URL}/api/collections/${id}/`, {
     headers: {
       Cookie: `sessionid=${sessionId}; csrftoken=${csrf}`,
       'X-CSRFToken': csrf,
