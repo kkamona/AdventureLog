@@ -15,9 +15,11 @@ import { defineConfig, devices } from '@playwright/test';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8015';
 
 export default defineConfig({
-  testDir: './tests',
+  // FIX: specs live in tests/e2e/, not tests/ directly
+  testDir: './tests/e2e',
 
-  timeout: 30_000,
+  // FIX: increased from 30s — map load + Docker cold-start need headroom
+  timeout: 60_000,
 
   expect: {
     timeout: 10_000

@@ -1,0 +1,169 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "AdventureLog AdventureLog" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]:
+        - img "AdventureLog" [ref=e7]
+        - generic [ref=e8]: AdventureLog
+    - list [ref=e10]:
+      - listitem [ref=e11]:
+        - link "Locations" [ref=e12] [cursor=pointer]:
+          - /url: /locations
+          - img [ref=e13]
+          - generic [ref=e15]: Locations
+      - listitem [ref=e16]:
+        - link "Collections" [ref=e17] [cursor=pointer]:
+          - /url: /collections
+          - img [ref=e18]
+          - generic [ref=e20]: Collections
+      - listitem [ref=e21]:
+        - link "World Travel" [ref=e22] [cursor=pointer]:
+          - /url: /worldtravel
+          - img [ref=e23]
+          - generic [ref=e25]: World Travel
+      - listitem [ref=e26]:
+        - link "Map" [ref=e27] [cursor=pointer]:
+          - /url: /map
+          - img [ref=e28]
+          - generic [ref=e30]: Map
+      - listitem [ref=e31]:
+        - link "Calendar" [ref=e32] [cursor=pointer]:
+          - /url: /calendar
+          - img [ref=e33]
+          - generic [ref=e35]: Calendar
+      - listitem [ref=e36]:
+        - link "Users" [ref=e37] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e38]
+          - generic [ref=e40]: Users
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - textbox / [ref=e44]:
+            - /placeholder: Search
+          - generic [ref=e45]: /
+        - button [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+      - button "A" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: A
+      - generic [ref=e53]:
+        - button [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+        - option "English" [selected]
+        - option "Español"
+        - option "Français"
+        - option "Deutsch"
+        - option "Italiano"
+        - option "中文"
+        - option "Nederlands"
+        - option "Svenska"
+        - option "Polski"
+        - option "한국어"
+        - option "Norsk"
+        - option "Русский"
+        - option "日本語"
+        - option "العربية"
+        - option "Português (Brasil)"
+        - option "Română"
+        - option "Slovenský"
+        - option "Türkçe"
+        - option "Українська"
+        - option "Magyar"
+        - option "Light"
+        - option "Dark"
+        - option "Dim"
+        - option "Night"
+        - option "Forest"
+        - option "Aqua"
+        - option "Aesthetic Light"
+        - option "Aesthetic Dark"
+        - option "Northern Lights"
+  - generic [ref=e58]:
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - generic [ref=e63]:
+          - generic [ref=e65]:
+            - img [ref=e67]
+            - generic [ref=e69]:
+              - heading "My Locations" [level=1] [ref=e70]
+              - paragraph [ref=e71]: 0 Locations • 0 Visited • 0 Planned
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - img [ref=e76]
+              - generic [ref=e78]: Visited
+              - generic [ref=e79]: "0"
+            - generic [ref=e80]:
+              - img [ref=e82]
+              - generic [ref=e84]: Planned
+              - generic [ref=e85]: "0"
+        - generic [ref=e87]:
+          - img [ref=e89]
+          - heading "No locations found" [level=3] [ref=e91]
+          - paragraph [ref=e92]: Start documenting your adventures and planning new ones. Every journey has a story worth telling.
+          - button "Create Location" [ref=e93] [cursor=pointer]:
+            - img [ref=e94]
+            - text: Create Location
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - img [ref=e101]
+          - heading "Filters & Sort" [level=2] [ref=e103]
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - heading "Categories" [level=3] [ref=e106]:
+              - img [ref=e107]
+              - text: Categories
+            - generic [ref=e109]:
+              - checkbox [ref=e110] [cursor=pointer]
+              - generic [ref=e111] [cursor=pointer]: Category Filter +
+            - button "Manage Categories" [ref=e112] [cursor=pointer]:
+              - img [ref=e113]
+              - text: Manage Categories
+          - generic [ref=e115]:
+            - heading "Sort" [level=3] [ref=e116]:
+              - img [ref=e117]
+              - text: Sort
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e122]: Order Direction
+                - generic [ref=e123]:
+                  - radio "Ascending" [checked] [ref=e124] [cursor=pointer]
+                  - radio "Descending" [ref=e125] [cursor=pointer]
+              - generic [ref=e126]:
+                - generic [ref=e128]: Order By
+                - generic [ref=e129]:
+                  - generic [ref=e130] [cursor=pointer]:
+                    - radio "Updated" [checked] [ref=e131]
+                    - generic [ref=e132]: Updated
+                  - generic [ref=e133] [cursor=pointer]:
+                    - radio "Name" [ref=e134]
+                    - generic [ref=e135]: Name
+                  - generic [ref=e136] [cursor=pointer]:
+                    - radio "Date" [ref=e137]
+                    - generic [ref=e138]: Date
+                  - generic [ref=e139] [cursor=pointer]:
+                    - radio "Rating" [ref=e140]
+                    - generic [ref=e141]: Rating
+          - generic [ref=e142]:
+            - heading "Visited" [level=3] [ref=e143]:
+              - img [ref=e144]
+              - text: Visited
+            - generic [ref=e146]:
+              - radio "All" [checked] [ref=e147] [cursor=pointer]
+              - radio "Visited" [ref=e148] [cursor=pointer]
+              - radio "Not Visited" [ref=e149] [cursor=pointer]
+          - generic [ref=e150]:
+            - heading "Sources" [level=3] [ref=e151]:
+              - img [ref=e152]
+              - text: Sources
+            - generic [ref=e154] [cursor=pointer]:
+              - checkbox "Include Collection Locations" [checked] [ref=e155]
+              - generic [ref=e156]: Include Collection Locations
+          - button "Filter" [ref=e157] [cursor=pointer]:
+            - img [ref=e158]
+            - text: Filter
+    - button [ref=e162] [cursor=pointer]:
+      - img [ref=e163]
+```

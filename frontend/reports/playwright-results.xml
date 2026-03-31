@@ -1,142 +1,681 @@
-<testsuites id="" name="" tests="10" failures="3" skipped="0" errors="0" time="253.978746">
-<testsuite name="mapping.spec.ts" timestamp="2026-03-28T07:41:27.406Z" hostname="chromium" tests="10" failures="3" skipped="0" time="105.642" errors="0">
-<testcase name="TC-MAP-01: /map page loads with heading and stat bar" classname="mapping.spec.ts" time="15.629">
-<failure message="mapping.spec.ts:127:1 TC-MAP-01: /map page loads with heading and stat bar" type="FAILURE">
-<![CDATA[  [chromium] › mapping.spec.ts:127:1 › TC-MAP-01: /map page loads with heading and stat bar ────────
+<testsuites id="" name="" tests="19" failures="16" skipped="3" errors="0" time="702.7418110000001">
+<testsuite name="locations.spec.ts" timestamp="2026-03-31T08:03:05.863Z" hostname="chromium" tests="19" failures="16" skipped="3" time="679.063" errors="0">
+<testcase name="Create Location › create with full valid data shows new card in list" classname="locations.spec.ts" time="60.297">
+<failure message="locations.spec.ts:41:3 create with full valid data shows new card in list" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:41:3 › Create Location › create with full valid data shows new card in list 
 
-    Error: expect(locator).toBeVisible() failed
+    Test timeout of 60000ms exceeded.
 
-    Locator:  locator('p.text-sm.text-base-content\\/60').first()
-    Expected: visible
-    Received: hidden
-    Timeout:  8000ms
-
+    Error: locator.fill: Test timeout of 60000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 8000ms
-      - waiting for locator('p.text-sm.text-base-content\\/60').first()
-        11 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
-           - unexpected value "hidden"
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
 
 
-      127 | test('TC-MAP-01: /map page loads with heading and stat bar', async ({ page }) => {
-      128 |   await expect(page.locator(SEL.pageHeading)).toBeVisible({ timeout: 8_000 });
-    > 129 |   await expect(page.locator(SEL.statBar).first()).toBeVisible({ timeout: 8_000 });
-          |                                                   ^
-      130 | });
-      131 |
-      132 | // =============================================================================
-        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:129:51
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:44:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    reports\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png
+    ..\..\reports\test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: reports\mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|mapping-TC-MAP-01-map-page-loads-with-heading-and-stat-bar-chromium\error-context.md]]
+[[ATTACHMENT|test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="TC-MAP-02: map canvas is present and has non-zero dimensions" classname="mapping.spec.ts" time="7.706">
-</testcase>
-<testcase name="TC-MAP-03: no JavaScript errors are thrown during map page load" classname="mapping.spec.ts" time="14.847">
-</testcase>
-<testcase name="TC-MAP-04: Show Visited checkbox is present and toggleable" classname="mapping.spec.ts" time="6.862">
-</testcase>
-<testcase name="TC-MAP-05: Show Planned checkbox is present and toggleable" classname="mapping.spec.ts" time="7.024">
-</testcase>
-<testcase name="TC-MAP-06: Show Regions checkbox is present and toggleable" classname="mapping.spec.ts" time="6.938">
-</testcase>
-<testcase name="TC-MAP-07: typing in search input updates the stat bar pin count" classname="mapping.spec.ts" time="12.935">
-<failure message="mapping.spec.ts:243:1 TC-MAP-07: typing in search input updates the stat bar pin count" type="FAILURE">
-<![CDATA[  [chromium] › mapping.spec.ts:243:1 › TC-MAP-07: typing in search input updates the stat bar pin count 
+<testcase name="Create Location › create with name only (minimal) succeeds" classname="locations.spec.ts" time="60.393">
+<failure message="locations.spec.ts:48:3 create with name only (minimal) succeeds" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:48:3 › Create Location › create with name only (minimal) succeeds ─
 
-    Error: expect(locator).toBeVisible() failed
+    Test timeout of 60000ms exceeded.
 
-    Locator:  locator('p.text-sm.text-base-content\\/60').first()
-    Expected: visible
-    Received: hidden
-    Timeout:  6000ms
-
+    Error: locator.fill: Test timeout of 60000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 6000ms
-      - waiting for locator('p.text-sm.text-base-content\\/60').first()
-        10 × locator resolved to <p class="text-sm text-base-content/60 truncate">@admin</p>
-           - unexpected value "hidden"
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
 
 
-      244 |   // Read initial count from stat bar
-      245 |   const statBar = page.locator(SEL.statBar).first();
-    > 246 |   await expect(statBar).toBeVisible({ timeout: 6_000 });
-          |                         ^
-      247 |   const initialText = await statBar.textContent() ?? '';
-      248 |
-      249 |   // Type a query that is very unlikely to match any real location name
-        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:246:25
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:51:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    reports\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png
+    ..\..\reports\test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: reports\mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|mapping-TC-MAP-07-typing-i-a4b0b-ates-the-stat-bar-pin-count-chromium\error-context.md]]
+[[ATTACHMENT|test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="TC-MAP-08: Add Location button opens dialog#my_modal_1" classname="mapping.spec.ts" time="8.142">
-</testcase>
-<testcase name="TC-MAP-09: canvas is present after navigating away and returning to /map" classname="mapping.spec.ts" time="12.059">
-</testcase>
-<testcase name="TC-MAP-10: clicking the Map link in the navbar navigates to /map" classname="mapping.spec.ts" time="13.5">
-<failure message="mapping.spec.ts:325:1 TC-MAP-10: clicking the Map link in the navbar navigates to /map" type="FAILURE">
-<![CDATA[  [chromium] › mapping.spec.ts:325:1 › TC-MAP-10: clicking the Map link in the navbar navigates to /map 
+<testcase name="Create Location › submit without name shows required-field error" classname="locations.spec.ts" time="60.162">
+<failure message="locations.spec.ts:55:3 submit without name shows required-field error" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:55:3 › Create Location › submit without name shows required-field error 
 
-    Error: expect(locator).toBeVisible() failed
+    Test timeout of 60000ms exceeded.
 
-    Locator:  locator('a[href="/map"]').first()
-    Expected: visible
-    Received: hidden
-    Timeout:  6000ms
-
+    Error: locator.click: Test timeout of 60000ms exceeded.
     Call log:
-      - Expect "toBeVisible" with timeout 6000ms
-      - waiting for locator('a[href="/map"]').first()
-        10 × locator resolved to <a href="/map" class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl">…</a>
-           - unexpected value "hidden"
+      - waiting for locator('button[type="submit"], button').filter({ hasText: /save|update|create/i }).first()
+        - locator resolved to <button class="btn btn-primary btn-wide mt-6 gap-2">…</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        26 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+           - waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+      - retrying click action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+      - retrying click action
+        - waiting 500ms
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
+      - retrying click action
+        - waiting 500ms
 
 
-      330 |   // Click the Map link in the desktop navbar
-      331 |   const mapLink = page.locator(SEL.navMap).first();
-    > 332 |   await expect(mapLink).toBeVisible({ timeout: 6_000 });
-          |                         ^
-      333 |   await mapLink.click();
-      334 |
-      335 |   await page.waitForURL('**/map**', { timeout: 8_000 });
-        at C:\Users\a.eraly\AdventureLog\frontend\mapping.spec.ts:332:25
+      58 |     await lp.openCreateModal();
+      59 |     // Leave name empty; attempt to save
+    > 60 |     await lp.saveButton.click();
+         |                         ^
+      61 |     // Form should NOT dismiss; either HTML5 validation or a visible error
+      62 |     const modalStillOpen = await lp.modal.isVisible().catch(() => false);
+      63 |     const validationVisible = await page
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:60:25
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    reports\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png
+    ..\..\reports\test-results\locations-Create-Location--36368--shows-required-field-error-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: reports\mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\locations-Create-Location--36368--shows-required-field-error-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\locations-Create-Location--36368--shows-required-field-error-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|mapping-TC-MAP-10-clicking-a61cf-the-navbar-navigates-to-map-chromium\error-context.md]]
+[[ATTACHMENT|test-results\locations-Create-Location--36368--shows-required-field-error-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Create Location › XSS payload in name is not executed" classname="locations.spec.ts" time="60.148">
+<failure message="locations.spec.ts:71:3 XSS payload in name is not executed" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:71:3 › Create Location › XSS payload in name is not executed ──────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+
+
+      81 |     });
+      82 |
+    > 83 |     await lp.nameInput.fill(LOCATIONS.xss.name);
+         |                        ^
+      84 |     await lp.saveButton.click();
+      85 |     await page.waitForTimeout(1500);
+      86 |
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:83:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Create Location › special characters in name are preserved" classname="locations.spec.ts" time="60.135">
+<failure message="locations.spec.ts:90:3 special characters in name are preserved" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:90:3 › Create Location › special characters in name are preserved ─
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+
+
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:93:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Edit Location › edit updates name visible in card" classname="locations.spec.ts" time="60.124">
+<failure message="locations.spec.ts:101:3 edit updates name visible in card" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:101:3 › Edit Location › edit updates name visible in card ─────────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="location-card"], .card').filter({ has: locator('.card-title, h2, h3') }).first().locator('button[aria-label*="menu"], button').filter({ hasText: /⋮|\.\.\.|\.\.\.|more/i })
+
+
+       at page-objects\LocationPage.ts:117
+
+      115 |
+      116 |   async openFirstCardMenu() {
+    > 117 |     await this.firstCardMenu.click();
+          |                              ^
+      118 |   }
+      119 |
+      120 |   async deleteFirstLocation() {
+        at LocationPage.openFirstCardMenu (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:117:30)
+        at LocationPage.editFirstLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:128:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:111:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Edit Location › cancel edit discards changes" classname="locations.spec.ts" time="60.146">
+<failure message="locations.spec.ts:118:3 cancel edit discards changes" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:118:3 › Edit Location › cancel edit discards changes ──────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="location-card"], .card').filter({ has: locator('.card-title, h2, h3') }).first().locator('button[aria-label*="menu"], button').filter({ hasText: /⋮|\.\.\.|\.\.\.|more/i })
+
+
+       at page-objects\LocationPage.ts:117
+
+      115 |
+      116 |   async openFirstCardMenu() {
+    > 117 |     await this.firstCardMenu.click();
+          |                              ^
+      118 |   }
+      119 |
+      120 |   async deleteFirstLocation() {
+        at LocationPage.openFirstCardMenu (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:117:30)
+        at LocationPage.editFirstLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:128:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:130:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Delete Location › delete removes location card from list" classname="locations.spec.ts" time="60.139">
+<failure message="locations.spec.ts:147:3 delete removes location card from list" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:147:3 › Delete Location › delete removes location card from list ──
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+
+
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:153:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Delete Location › cancelling delete confirmation keeps card in list" classname="locations.spec.ts" time="60.147">
+<failure message="locations.spec.ts:166:3 cancelling delete confirmation keeps card in list" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:166:3 › Delete Location › cancelling delete confirmation keeps card in list 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+
+
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:171:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Search &amp; Filter › search returns matching locations" classname="locations.spec.ts" time="60.208">
+<failure message="locations.spec.ts:188:3 search returns matching locations" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:188:3 › Search & Filter › search returns matching locations ───────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+
+
+       at page-objects\LocationPage.ts:91
+
+      89 |     lng?: string;
+      90 |   }) {
+    > 91 |     await this.nameInput.fill(data.name);
+         |                          ^
+      92 |     if (data.description) await this.descriptionInput.fill(data.description);
+      93 |     if (data.date) await this.dateInput.fill(data.date);
+      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
+        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
+        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:193:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Search-Filter-search-returns-matching-locations-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Search-Filter-search-returns-matching-locations-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Search-Filter-search-returns-matching-locations-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Search-Filter-search-returns-matching-locations-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Search &amp; Filter › search with non-matching query shows empty state or zero cards" classname="locations.spec.ts" time="60.182">
+<failure message="locations.spec.ts:201:3 search with non-matching query shows empty state or zero cards" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:201:3 › Search & Filter › search with non-matching query shows empty state or zero cards 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[placeholder*="search" i], input[type="search"], input[name="search"]').first()
+        - locator resolved to <input type="text" class="grow" placeholder="Search"/>
+        - fill("zzzNOTHINGMATCHESzzzXYZXYZ")
+      - attempting fill action
+        2 × waiting for element to be visible, enabled and editable
+          - element is not visible
+        - retrying fill action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and editable
+          - element is not visible
+        - retrying fill action
+          - waiting 100ms
+        112 × waiting for element to be visible, enabled and editable
+            - element is not visible
+          - retrying fill action
+            - waiting 500ms
+
+
+       at page-objects\LocationPage.ts:112
+
+      110 |
+      111 |   async searchLocations(query: string) {
+    > 112 |     await this.searchInput.fill(query);
+          |                            ^
+      113 |     await this.page.waitForLoadState('networkidle');
+      114 |   }
+      115 |
+        at LocationPage.searchLocations (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:112:28)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:204:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Visit Status Filter › filter by status &quot;visited&quot; renders without error" classname="locations.spec.ts" time="2.561">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visit Status Filter › filter by status &quot;planned&quot; renders without error" classname="locations.spec.ts" time="2.56">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Visit Status Filter › filter by status &quot;featured&quot; renders without error" classname="locations.spec.ts" time="2.569">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Location API › GET /api/adventures/ returns 200 and array" classname="locations.spec.ts" time="1.836">
+<failure message="locations.spec.ts:250:3 GET /api/adventures/ returns 200 and array" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:250:3 › Location API › GET /api/adventures/ returns 200 and array ─
+
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
+
+      249 |
+      250 |   test('GET /api/adventures/ returns 200 and array', async ({ loggedInPage: page }) => {
+    > 251 |     const result = await page.evaluate(
+          |                               ^
+      252 |       async ({ apiUrl, endpoint }) => {
+      253 |         const res = await fetch(`${apiUrl}${endpoint}`, { credentials: 'include' });
+      254 |         const data = await res.json();
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:251:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Location API › POST /api/adventures/ creates new location" classname="locations.spec.ts" time="1.873">
+<failure message="locations.spec.ts:263:3 POST /api/adventures/ creates new location" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:263:3 › Location API › POST /api/adventures/ creates new location ─
+
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
+
+      262 |
+      263 |   test('POST /api/adventures/ creates new location', async ({ loggedInPage: page }) => {
+    > 264 |     const result = await page.evaluate(
+          |                               ^
+      265 |       async ({ apiUrl, endpoint }) => {
+      266 |         const res = await fetch(`${apiUrl}${endpoint}`, {
+      267 |           method: 'POST',
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:264:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Location API › PATCH /api/adventures/:id/ updates name" classname="locations.spec.ts" time="1.868">
+<failure message="locations.spec.ts:282:3 PATCH /api/adventures/:id/ updates name" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:282:3 › Location API › PATCH /api/adventures/:id/ updates name ────
+
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
+
+      282 |   test('PATCH /api/adventures/:id/ updates name', async ({ loggedInPage: page }) => {
+      283 |     // Create one to patch
+    > 284 |     const createResult = await page.evaluate(
+          |                                     ^
+      285 |       async ({ apiUrl, endpoint }) => {
+      286 |         const res = await fetch(`${apiUrl}${endpoint}`, {
+      287 |           method: 'POST',
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:284:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Location API › DELETE /api/adventures/:id/ returns 204" classname="locations.spec.ts" time="1.851">
+<failure message="locations.spec.ts:316:3 DELETE /api/adventures/:id/ returns 204" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:316:3 › Location API › DELETE /api/adventures/:id/ returns 204 ────
+
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
+
+      316 |   test('DELETE /api/adventures/:id/ returns 204', async ({ loggedInPage: page }) => {
+      317 |     // Create a throwaway location
+    > 318 |     const createResult = await page.evaluate(
+          |                                     ^
+      319 |       async ({ apiUrl, endpoint }) => {
+      320 |         const res = await fetch(`${apiUrl}${endpoint}`, {
+      321 |           method: 'POST',
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:318:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Location Detail Page › navigating to /locations/:id shows location name" classname="locations.spec.ts" time="1.864">
+<failure message="locations.spec.ts:351:3 navigating to /locations/:id shows location name" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:351:3 › Location Detail Page › navigating to /locations/:id shows location name 
+
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
+
+      351 |   test('navigating to /locations/:id shows location name', async ({ loggedInPage: page }) => {
+      352 |     // Create via API, then navigate to its detail page
+    > 353 |     const createResult = await page.evaluate(
+          |                                     ^
+      354 |       async ({ apiUrl, endpoint }) => {
+      355 |         const name = `Detail Page Test ${Date.now()}`;
+      356 |         const res = await fetch(`${apiUrl}${endpoint}`, {
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:353:37
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>

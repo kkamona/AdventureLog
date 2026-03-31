@@ -1,0 +1,173 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "AdventureLog AdventureLog" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]:
+        - img "AdventureLog" [ref=e7]
+        - generic [ref=e8]: AdventureLog
+    - list [ref=e10]:
+      - listitem [ref=e11]:
+        - link "Locations" [ref=e12] [cursor=pointer]:
+          - /url: /locations
+          - img [ref=e13]
+          - generic [ref=e15]: Locations
+      - listitem [ref=e16]:
+        - link "Collections" [ref=e17] [cursor=pointer]:
+          - /url: /collections
+          - img [ref=e18]
+          - generic [ref=e20]: Collections
+      - listitem [ref=e21]:
+        - link "World Travel" [ref=e22] [cursor=pointer]:
+          - /url: /worldtravel
+          - img [ref=e23]
+          - generic [ref=e25]: World Travel
+      - listitem [ref=e26]:
+        - link "Map" [ref=e27] [cursor=pointer]:
+          - /url: /map
+          - img [ref=e28]
+          - generic [ref=e30]: Map
+      - listitem [ref=e31]:
+        - link "Calendar" [ref=e32] [cursor=pointer]:
+          - /url: /calendar
+          - img [ref=e33]
+          - generic [ref=e35]: Calendar
+      - listitem [ref=e36]:
+        - link "Users" [ref=e37] [cursor=pointer]:
+          - /url: /users
+          - img [ref=e38]
+          - generic [ref=e40]: Users
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - textbox / [ref=e44]:
+            - /placeholder: Search
+          - generic [ref=e45]: /
+        - button [ref=e46] [cursor=pointer]:
+          - img [ref=e47]
+      - button "A" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: A
+      - generic [ref=e53]:
+        - button [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+        - option "English" [selected]
+        - option "Español"
+        - option "Français"
+        - option "Deutsch"
+        - option "Italiano"
+        - option "中文"
+        - option "Nederlands"
+        - option "Svenska"
+        - option "Polski"
+        - option "한국어"
+        - option "Norsk"
+        - option "Русский"
+        - option "日本語"
+        - option "العربية"
+        - option "Português (Brasil)"
+        - option "Română"
+        - option "Slovenský"
+        - option "Türkçe"
+        - option "Українська"
+        - option "Magyar"
+        - option "Light"
+        - option "Dark"
+        - option "Dim"
+        - option "Night"
+        - option "Forest"
+        - option "Aqua"
+        - option "Aesthetic Light"
+        - option "Aesthetic Dark"
+        - option "Northern Lights"
+  - generic [ref=e58]:
+    - heading "Settings Page" [level=1] [ref=e63]
+    - generic [ref=e65]:
+      - generic [ref=e67]:
+        - heading "Settings Menu" [level=3] [ref=e68]
+        - list [ref=e69]:
+          - listitem [ref=e70]:
+            - button "👤 Profile" [ref=e71] [cursor=pointer]:
+              - generic [ref=e72]: 👤
+              - generic [ref=e73]: Profile
+          - listitem [ref=e74]:
+            - button "🔒 Security" [ref=e75] [cursor=pointer]:
+              - generic [ref=e76]: 🔒
+              - generic [ref=e77]: Security
+          - listitem [ref=e78]:
+            - button "📧 Emails" [ref=e79] [cursor=pointer]:
+              - generic [ref=e80]: 📧
+              - generic [ref=e81]: Emails
+          - listitem [ref=e82]:
+            - button "🔗 Integrations" [ref=e83] [cursor=pointer]:
+              - generic [ref=e84]: 🔗
+              - generic [ref=e85]: Integrations
+          - listitem [ref=e86]:
+            - button "📦 Backup & Restore" [ref=e87] [cursor=pointer]:
+              - generic [ref=e88]: 📦
+              - generic [ref=e89]: Backup & Restore
+          - listitem [ref=e90]:
+            - button "⚙️ Admin" [ref=e91] [cursor=pointer]:
+              - generic [ref=e92]: ⚙️
+              - generic [ref=e93]: Admin
+          - listitem [ref=e94]:
+            - button "🛠️ Advanced" [ref=e95] [cursor=pointer]:
+              - generic [ref=e96]: 🛠️
+              - generic [ref=e97]: Advanced
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]: 👤
+          - generic [ref=e103]:
+            - heading "Profile Information" [level=2] [ref=e104]
+            - paragraph [ref=e105]: Update your personal details and profile picture
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]:
+              - generic [ref=e110]: Username
+              - textbox "Enter your username" [ref=e111]: admin
+            - generic [ref=e112]:
+              - generic [ref=e114]: First Name
+              - textbox "Enter your first name" [ref=e115]
+            - generic [ref=e116]:
+              - generic [ref=e118]: Last Name
+              - textbox "Enter your last name" [ref=e119]
+            - generic [ref=e120]:
+              - generic [ref=e122]: Profile Picture
+              - button "Choose File" [ref=e123]
+            - generic [ref=e125] [cursor=pointer]:
+              - checkbox "Public Profile Make your profile visible to other users" [ref=e126]
+              - generic [ref=e127]:
+                - text: Public Profile
+                - paragraph [ref=e128]: Make your profile visible to other users
+            - generic [ref=e130] [cursor=pointer]:
+              - checkbox "Use Imperial Units Use imperial units (feet, inches, pounds) instead of metric units" [ref=e131]
+              - generic [ref=e132]:
+                - text: Use Imperial Units
+                - paragraph [ref=e133]: Use imperial units (feet, inches, pounds) instead of metric units
+            - generic [ref=e134]:
+              - generic [ref=e136]: Preferred currency
+              - combobox "Preferred currency" [ref=e137] [cursor=pointer]:
+                - option "USD - US Dollar" [selected]
+                - option "EUR - Euro"
+                - option "GBP - British Pound"
+                - option "JPY - Japanese Yen"
+                - option "AUD - Australian Dollar"
+                - option "CAD - Canadian Dollar"
+                - option "CHF - Swiss Franc"
+                - option "CNY - Chinese Yuan"
+                - option "HKD - Hong Kong Dollar"
+                - option "SGD - Singapore Dollar"
+                - option "SEK - Swedish Krona"
+                - option "NOK - Norwegian Krone"
+                - option "DKK - Danish Krone"
+                - option "NZD - New Zealand Dollar"
+                - option "INR - Indian Rupee"
+                - option "MXN - Mexican Peso"
+                - option "BRL - Brazilian Real"
+                - option "ZAR - South African Rand"
+                - option "AED - UAE Dirham"
+                - option "TRY - Turkish Lira"
+              - paragraph [ref=e138]: This currency pre-fills money fields when adding new items.
+          - button "Update" [ref=e139] [cursor=pointer]
+```
