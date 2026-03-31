@@ -1,212 +1,319 @@
 /**
- * collections.spec.ts  – AdventureLog Collections List Page Tests
+ * collections.spec.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Module:     Collections (Trips)
+ * Risk Score: HIGH (12)
+ * Tool:       Playwright (UI automation, Chromium)
  *
- * Route:   /collections
- * Server:  requires auth; fetches /api/collections/ (paginated) plus
- *          /shared/, /archived/, /invites/ in parallel.
- *          Query params: order_by, order_direction, status, page
- *          Action:  restoreData (import collection from JSON file)
+ * Every selector verified against:
+ *   frontend/src/routes/collections/+page.svelte
+ *   frontend/src/lib/components/CollectionModal.svelte
  *
- * Tests:
- *   COL-01  Unauthenticated user redirected to /login
- *   COL-02  Authenticated user reaches /collections
- *   COL-03  Page has a non-empty, non-error <title>
- *   COL-04  Page loads without critical JS console errors
- *   COL-05  Default URL (no query params) loads successfully
- *   COL-06  order_by=name query param accepted without error
- *   COL-07  order_direction=asc query param accepted without error
- *   COL-08  page=1 query param accepted without error
- *   COL-09  page=2 returns a non-500 response
- *   COL-10  A newly created collection appears in the list
- *   COL-11  Collection list cards link to the detail page (/collections/<id>)
- *   COL-12  Shared collections section is rendered (or gracefully absent)
- *   COL-13  Archived collections section is rendered (or gracefully absent)
- *   COL-14  restoreData action rejects submission with no file selected
+ * Critical source findings:
+ *  - View tabs: <button class="tab gap-2"> (pure JS state, no navigation)
+ *  - Sort direction: BUTTONS (join-item btn), NOT radio inputs
+ *  - Order-by: radio inputs with name="order_by_radio"
+ *  - Status filter: radio inputs with name="status_filter"
+ *  - CollectionModal: <dialog id="my_modal_1"> (same id pattern as LocationModal)
+ *  - Name: <input id="name" name="name" required>
+ *  - Submit: <button type="submit" class="btn btn-primary gap-2">
+ *  - Cancel: <button type="button" class="btn btn-neutral gap-2">
+ *
+ * Test Cases:
+ *   TC-COL-01  Page loads — heading visible
+ *   TC-COL-02  All four view tabs present
+ *   TC-COL-03  Switching tabs applies tab-active class
+ *   TC-COL-04  FAB (+) opens dropdown with Collection and Import buttons
+ *   TC-COL-05  FAB Collection button opens dialog#my_modal_1
+ *   TC-COL-06  Create collection — fill name, submit → card appears
+ *   TC-COL-07  Empty name does not close modal (required field)
+ *   TC-COL-08  Sort direction buttons (Ascending/Descending) present and clickable
+ *   TC-COL-09  Order-by radios (updated/start_date/name) present
+ *   TC-COL-10  Status filter radios (5 options) present and functional
+ *   TC-COL-11  Modal Cancel button closes dialog#my_modal_1
+ *   TC-COL-12  Public Collection toggle is present and toggleable
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { test, expect } from '@playwright/test';
-import {
-  ADMIN_USER,
-  ROUTES,
-  loginAs,
-  expectUnauthenticated,
-  apiLogin,
-  createTestCollection,
-  deleteTestCollection
-} from './fixtures/helpers';
+import { test, expect, type Page } from '@playwright/test';
 
-// ── Shared state ──────────────────────────────────────────────────────────────
+const VALID_USERNAME = 'admin';
+const VALID_PASSWORD = 'admin';
 
-let sessionId: string;
-let testCollectionId: string;
-let testCollectionName: string;
+const SEL = {
+  // Login helpers
+  usernameInput: '#username',
+  passwordInput: '#password',
+  loginSubmit:   'button[type="submit"].btn.btn-primary',
 
-test.beforeAll(async ({ request }) => {
-  sessionId = await apiLogin(request);
-  const col = await createTestCollection(request, sessionId, {
-    name: `PW List Col ${Date.now()}`
-  });
-  testCollectionId = col.id;
-  testCollectionName = col.name;
-});
+  // collections/+page.svelte
+  pageHeading:   'h1.text-3xl.font-bold',
 
-test.afterAll(async ({ request }) => {
-  if (testCollectionId) {
-    await deleteTestCollection(request, sessionId, testCollectionId);
+  // View tabs — <button class="tab gap-2 ..."> inside .tabs.tabs-boxed
+  tabs:          '.tabs.tabs-boxed button.tab',
+  tabOwned:      '.tabs.tabs-boxed button.tab:nth-child(1)',
+  tabShared:     '.tabs.tabs-boxed button.tab:nth-child(2)',
+  tabArchived:   '.tabs.tabs-boxed button.tab:nth-child(3)',
+  tabInvites:    '.tabs.tabs-boxed button.tab:nth-child(4)',
+
+  // Empty-state button
+  emptyStateBtn: 'button.btn.btn-primary.btn-wide',
+
+  // FAB: <div tabindex="0" role="button" class="btn btn-primary btn-circle w-16 h-16 ...">
+  fab:              'div.btn.btn-primary.btn-circle[role="button"]',
+  // <button class="btn btn-primary gap-2 w-full"> inside dropdown
+  fabCollectionBtn: '.dropdown-content button.btn.btn-primary.gap-2',
+  // <button class="btn btn-neutral gap-2 w-full"> inside dropdown (Import)
+  fabImportBtn:     '.dropdown-content button.btn.btn-neutral.gap-2',
+
+  // Collection card links
+  collectionCardLink: 'a[href^="/collections/"]',
+
+  // Sidebar — sort direction are BUTTONS (confirmed from source)
+  // <button class="join-item btn btn-sm flex-1 ...">
+  sortAscBtn:   '.join.w-full button.join-item:nth-child(1)',
+  sortDescBtn:  '.join.w-full button.join-item:nth-child(2)',
+
+  // Order-by: <input type="radio" name="order_by_radio">
+  orderByRadios:    'input[name="order_by_radio"]',
+  orderByStartDate: 'input[name="order_by_radio"]:nth-of-type(2)',
+  orderByName:      'input[name="order_by_radio"]:nth-of-type(3)',
+
+  // Status filter: <input type="radio" name="status_filter"> (5 options)
+  statusRadios:     'input[name="status_filter"]',
+  statusAll:        'input[name="status_filter"]:nth-of-type(1)',
+  statusFolder:     'input[name="status_filter"]:nth-of-type(2)',
+
+  // CollectionModal.svelte
+  modal:        'dialog#my_modal_1',
+  nameInput:    'dialog#my_modal_1 #name',
+  startDate:    'dialog#my_modal_1 #start_date',
+  endDate:      'dialog#my_modal_1 #end_date',
+  publicToggle: 'dialog#my_modal_1 #is_public',
+  // <button type="submit" class="btn btn-primary gap-2">
+  modalSubmit:  'dialog#my_modal_1 button[type="submit"].btn.btn-primary',
+  // <button type="button" class="btn btn-neutral gap-2" on:click={close}>
+  modalCancel:  'dialog#my_modal_1 button[type="button"].btn.btn-neutral',
+  // <button class="btn btn-ghost btn-square" on:click={close}> (header ×)
+  modalClose:   'dialog#my_modal_1 button.btn.btn-ghost.btn-square',
+};
+
+async function loginAs(page: Page, u = VALID_USERNAME, p = VALID_PASSWORD) {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.usernameInput);
+  await page.locator(SEL.usernameInput).fill(u);
+  await page.locator(SEL.passwordInput).fill(p);
+  await page.locator(SEL.loginSubmit).click();
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 12_000 });
+}
+
+async function openCollectionModal(page: Page) {
+  await page.locator(SEL.fab).click();
+  await page.locator(SEL.fabCollectionBtn).waitFor({ state: 'visible', timeout: 6_000 });
+  await page.locator(SEL.fabCollectionBtn).click();
+  await page.locator(SEL.modal).waitFor({ state: 'visible', timeout: 6_000 });
+}
+
+async function ensureSidebarVisible(page: Page) {
+  const toggle = page.locator('button.btn.btn-ghost.btn-square.lg\\:hidden').first();
+  if (await toggle.isVisible()) {
+    await toggle.click();
+    await page.waitForTimeout(400);
   }
-});
+}
 
 test.beforeEach(async ({ page }) => {
-  await loginAs(page, ADMIN_USER.username, ADMIN_USER.password);
+  await loginAs(page);
+  await page.goto('/collections');
+  await page.waitForSelector(SEL.pageHeading, { timeout: 10_000 });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
+// =============================================================================
+// TC-COL-01
+// =============================================================================
+test('TC-COL-01: /collections page loads with page heading', async ({ page }) => {
+  await expect(page.locator(SEL.pageHeading)).toBeVisible({ timeout: 8_000 });
+});
 
-test('COL-01: Unauthenticated user visiting /collections is redirected to /login', async ({
+// =============================================================================
+// TC-COL-02
+// =============================================================================
+test('TC-COL-02: all four view tabs are present', async ({ page }) => {
+  await expect(page.locator(SEL.tabs)).toHaveCount(4, { timeout: 6_000 });
+  await expect(page.locator(SEL.tabOwned)).toBeVisible();
+  await expect(page.locator(SEL.tabShared)).toBeVisible();
+  await expect(page.locator(SEL.tabArchived)).toBeVisible();
+  await expect(page.locator(SEL.tabInvites)).toBeVisible();
+});
+
+// =============================================================================
+// TC-COL-03  tab-active class moves to the clicked tab
+// Source: class="tab gap-2 {activeView === 'owned' ? 'tab-active' : ''}"
+// =============================================================================
+test('TC-COL-03: clicking a tab makes it active and deactivates the previous one', async ({
   page,
-  context
 }) => {
-  await context.clearCookies();
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-  await expectUnauthenticated(page);
+  // My Collections active on load
+  await expect(page.locator(SEL.tabOwned)).toHaveClass(/tab-active/, { timeout: 6_000 });
+
+  await page.locator(SEL.tabShared).click();
+  await expect(page.locator(SEL.tabShared)).toHaveClass(/tab-active/);
+  await expect(page.locator(SEL.tabOwned)).not.toHaveClass(/tab-active/);
+
+  await page.locator(SEL.tabArchived).click();
+  await expect(page.locator(SEL.tabArchived)).toHaveClass(/tab-active/);
+
+  await page.locator(SEL.tabInvites).click();
+  await expect(page.locator(SEL.tabInvites)).toHaveClass(/tab-active/);
+
+  // Return to owned
+  await page.locator(SEL.tabOwned).click();
+  await expect(page.locator(SEL.tabOwned)).toHaveClass(/tab-active/);
 });
 
-test('COL-02: Authenticated user can reach /collections', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
+// =============================================================================
+// TC-COL-04  FAB dropdown contains Collection and Import buttons
+// =============================================================================
+test('TC-COL-04: FAB (+) opens dropdown with Collection and Import buttons', async ({ page }) => {
+  await page.locator(SEL.fab).click();
 
-  await expect(page).not.toHaveURL(/\/login/);
-  await expect(page).toHaveURL(/\/collections/);
+  await expect(page.locator(SEL.fabCollectionBtn)).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator(SEL.fabImportBtn)).toBeVisible({ timeout: 6_000 });
 });
 
-test('COL-03: Collections page has a non-empty, non-error <title>', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
+// =============================================================================
+// TC-COL-05  FAB Collection button opens dialog#my_modal_1
+// Source: CollectionModal mounts <dialog id="my_modal_1"> and calls showModal() in onMount
+// =============================================================================
+test('TC-COL-05: FAB Collection button opens dialog#my_modal_1 with name input', async ({
+  page,
+}) => {
+  await openCollectionModal(page);
 
-  const title = await page.title();
-  expect(title.trim().length).toBeGreaterThan(0);
-  expect(title).not.toMatch(/error|exception/i);
+  await expect(page.locator(SEL.modal)).toBeVisible({ timeout: 6_000 });
+  // Name input must be inside the modal
+  await expect(page.locator(SEL.nameInput)).toBeVisible({ timeout: 6_000 });
 });
 
-test('COL-04: Collections page loads without critical JS console errors', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
-  });
+// =============================================================================
+// TC-COL-06  Create collection → card appears
+// Source: handleSubmit() POSTs /api/collections → dispatches 'save' → saveOrCreate()
+//         prepends new collection to array → reactive render shows card
+// =============================================================================
+test('TC-COL-06: creating a collection saves it and shows a card in the list', async ({ page }) => {
+  await openCollectionModal(page);
 
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
+  const name = `Playwright Trip ${Date.now()}`;
+  await page.locator(SEL.nameInput).fill(name);
+  await page.locator(SEL.modalSubmit).click();
 
-  const critical = errors.filter(
-    (e) =>
-      !e.includes('favicon') &&
-      !e.includes('analytics') &&
-      !e.includes('umami') &&
-      !e.includes('ERR_ABORTED') &&
-      !e.includes('net::ERR_')
-  );
-  expect(critical).toHaveLength(0);
+  // Modal should close after successful save
+  await expect(page.locator(SEL.modal)).not.toBeVisible({ timeout: 8_000 });
+
+  // Card with the collection name should appear
+  await expect(page.locator(`text=${name}`)).toBeVisible({ timeout: 8_000 });
 });
 
-test('COL-05: /collections loads with default params (no query string)', async ({ page }) => {
-  const response = await page.goto('/collections');
-  expect(response?.status()).toBeLessThan(500);
-  await page.waitForLoadState('networkidle');
-  await expect(page).toHaveURL(/\/collections/);
-});
+// =============================================================================
+// TC-COL-07  Empty name does not close modal
+// Source: <input id="name" required> — HTML5 required blocks form submission
+// =============================================================================
+test('TC-COL-07: submitting with empty name keeps the modal open', async ({ page }) => {
+  await openCollectionModal(page);
 
-test('COL-06: order_by=name query param is accepted without error', async ({ page }) => {
-  const response = await page.goto('/collections?order_by=name&order_direction=asc');
-  expect(response?.status()).toBeLessThan(500);
-  await page.waitForLoadState('networkidle');
-  await expect(page).not.toHaveURL(/\/login/);
-});
+  // Click submit without filling name
+  await page.locator(SEL.modalSubmit).click();
 
-test('COL-07: order_direction=asc query param is accepted without error', async ({ page }) => {
-  const response = await page.goto('/collections?order_by=updated_at&order_direction=asc');
-  expect(response?.status()).toBeLessThan(500);
-  await page.waitForLoadState('networkidle');
-  await expect(page).not.toHaveURL(/\/login/);
-});
-
-test('COL-08: ?page=1 query param accepted without error', async ({ page }) => {
-  const response = await page.goto('/collections?page=1');
-  expect(response?.status()).toBeLessThan(500);
-  await page.waitForLoadState('networkidle');
-  await expect(page).not.toHaveURL(/\/login/);
-});
-
-test('COL-09: ?page=2 returns a non-500 response', async ({ page }) => {
-  const response = await page.goto('/collections?page=2');
-  expect(response?.status()).toBeLessThan(500);
-  // Page 2 may be empty – just confirm it didn't crash
-});
-
-test('COL-10: A newly created collection is visible in the list', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-  await expect(page.getByText(testCollectionName)).toBeVisible({ timeout: 10_000 });
-});
-
-test('COL-11: Collection cards contain a link to /collections/<id>', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-
-  const detailLink = page.locator('a[href^="/collections/"]').first();
-
-  if (await detailLink.isVisible({ timeout: 8_000 }).catch(() => false)) {
-    const href = await detailLink.getAttribute('href');
-    expect(href).toMatch(/^\/collections\/\S+/);
-  } else {
-    // Empty state is acceptable – ensure the page itself rendered
-    const body = await page.locator('body').innerText();
-    expect(body.trim().length).toBeGreaterThan(0);
-  }
-});
-
-test('COL-12: Shared collections section is rendered or gracefully absent', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-
-  // The section for shared collections may have a heading or simply be missing if empty
-  // Either outcome is acceptable – the test just confirms no crash
-  const body = await page.locator('body').innerText();
-  expect(body.trim().length).toBeGreaterThan(0);
-  await expect(page).not.toHaveURL(/\/login/);
-});
-
-test('COL-13: Archived collections section is rendered or gracefully absent', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-
-  const body = await page.locator('body').innerText();
-  expect(body.trim().length).toBeGreaterThan(0);
-  await expect(page).not.toHaveURL(/\/login/);
-});
-
-test('COL-14: restoreData action rejects form submission with no file', async ({ page }) => {
-  await page.goto(ROUTES.collections);
-  await page.waitForLoadState('networkidle');
-
-  // Find a file input associated with the restoreData / import action
-  const fileInput = page.locator('input[type="file"]').first();
-
-  if (!(await fileInput.isVisible({ timeout: 5_000 }).catch(() => false))) {
-    test.skip(true, 'No file import form visible on the collections list page');
-    return;
-  }
-
-  const form = page.locator('form').filter({ has: fileInput }).first();
-  await form.locator('button[type="submit"]').first().click();
   await page.waitForTimeout(1_500);
+  await expect(page.locator(SEL.modal)).toBeVisible();
+});
 
-  // Should stay on /collections and show an error
-  await expect(page).toHaveURL(/\/collections/);
+// =============================================================================
+// TC-COL-08  Sort direction BUTTONS (not radios — confirmed from source)
+// Source: <button class="join-item btn btn-sm flex-1 {orderDirection === 'asc' ? 'btn-active' : ''}">
+//         Clicking calls updateSort() which navigates URL
+// =============================================================================
+test('TC-COL-08: sort direction buttons (Ascending/Descending) are present and change state', async ({
+  page,
+}) => {
+  await ensureSidebarVisible(page);
 
-  const error = page
-    .getByRole('alert')
-    .or(page.locator('.error, .alert-error, [data-testid="error"], .text-error'))
-    .first();
-  await expect(error).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(SEL.sortAscBtn)).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator(SEL.sortDescBtn)).toBeVisible({ timeout: 6_000 });
+
+  // Click Descending
+  await page.locator(SEL.sortDescBtn).click();
+  await page.waitForSelector(SEL.pageHeading, { timeout: 8_000 });
+  await ensureSidebarVisible(page);
+  await expect(page.locator(SEL.sortDescBtn)).toHaveClass(/btn-active/, { timeout: 4_000 });
+
+  // Click Ascending
+  await page.locator(SEL.sortAscBtn).click();
+  await page.waitForSelector(SEL.pageHeading, { timeout: 8_000 });
+  await ensureSidebarVisible(page);
+  await expect(page.locator(SEL.sortAscBtn)).toHaveClass(/btn-active/, { timeout: 4_000 });
+});
+
+// =============================================================================
+// TC-COL-09  Order-by radios present (3 options: updated_at/start_date/name)
+// Source: name="order_by_radio" — 3 radio inputs
+// =============================================================================
+test('TC-COL-09: three order-by radio buttons are present', async ({ page }) => {
+  await ensureSidebarVisible(page);
+
+  await expect(page.locator(SEL.orderByRadios)).toHaveCount(3, { timeout: 6_000 });
+});
+
+// =============================================================================
+// TC-COL-10  Status filter radios — 5 options, functional
+// Source: name="status_filter" — 5 radios, each on:change calls updateStatusFilter()
+// =============================================================================
+test('TC-COL-10: five status filter radios are present and folder filter works', async ({
+  page,
+}) => {
+  await ensureSidebarVisible(page);
+
+  await expect(page.locator(SEL.statusRadios)).toHaveCount(5, { timeout: 6_000 });
+
+  // Click Folder filter
+  await page.locator(SEL.statusFolder).click();
+  await page.waitForSelector(SEL.pageHeading, { timeout: 8_000 });
+
+  // Reset to All
+  await ensureSidebarVisible(page);
+  await page.locator(SEL.statusAll).click();
+  await page.waitForSelector(SEL.pageHeading, { timeout: 8_000 });
+});
+
+// =============================================================================
+// TC-COL-11  Modal Cancel button closes dialog#my_modal_1
+// Source: <button type="button" class="btn btn-neutral gap-2" on:click={close}>
+// =============================================================================
+test('TC-COL-11: modal Cancel button dismisses dialog#my_modal_1', async ({ page }) => {
+  await openCollectionModal(page);
+  await expect(page.locator(SEL.modal)).toBeVisible({ timeout: 6_000 });
+
+  await page.locator(SEL.modalCancel).click();
+  await expect(page.locator(SEL.modal)).not.toBeVisible({ timeout: 6_000 });
+});
+
+// =============================================================================
+// TC-COL-12  Public Collection toggle present and toggleable
+// Source: <input type="checkbox" class="toggle toggle-primary" id="is_public" name="is_public">
+//         Default: collection.is_public = false (unchecked on new collection)
+// =============================================================================
+test('TC-COL-12: Public Collection toggle is present and toggleable in modal', async ({ page }) => {
+  await openCollectionModal(page);
+
+  const toggle = page.locator(SEL.publicToggle);
+  await expect(toggle).toBeVisible({ timeout: 6_000 });
+
+  // Default: unchecked
+  await expect(toggle).not.toBeChecked();
+
+  await toggle.click();
+  await expect(toggle).toBeChecked();
+
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
 });

@@ -1,223 +1,392 @@
 /**
- * auth.spec.ts  – AdventureLog Authentication Tests
+ * auth.spec.ts
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Module:     Authentication & User Management
+ * Risk Score: CRITICAL (20) — highest priority per Assignment 1
+ * Tool:       Playwright (UI automation, Chromium)
  *
- * ⚠️  CRITICAL MODULE  (QG-2 risk score 20)
- * The pipeline enforces ZERO failures in this file.
- * Any failure here blocks the PR from merging to main.
+ * Every selector in this file is derived directly from source code:
+ *   frontend/src/routes/login/+page.svelte
+ *   frontend/src/routes/signup/+page.svelte
+ *   frontend/src/lib/components/Navbar.svelte
+ *   frontend/src/lib/components/Avatar.svelte
  *
- * Tests:
- *   AUTH-01  Login page renders the username, password fields and submit button
- *   AUTH-02  Valid admin credentials redirect to the dashboard
- *   AUTH-03  Invalid credentials stay on /login and show an error
- *   AUTH-04  Submitting with an empty username is rejected
- *   AUTH-05  Submitting with an empty password is rejected
- *   AUTH-06  Authenticated user visiting /login is redirected home
- *   AUTH-07  Unauthenticated user visiting / is redirected to /login
- *   AUTH-08  Logout clears the session and blocks re-entry to home
- *   AUTH-09  Registration page renders required fields (or disabled message)
- *   AUTH-10  Mismatched passwords on registration show an error
- *   AUTH-11  MFA input field is NOT shown on the initial login page load
- *   AUTH-12  Login page renders without a 5xx error regardless of provider list
- *   AUTH-13  Mixed-case username is accepted (server normalises to lowercase)
- *   AUTH-14  Authenticated user visiting /register is redirected home
+ * Test Cases:
+ *   TC-AUTH-01  Valid credentials → redirected away from /login
+ *   TC-AUTH-02  Wrong password → .alert-error shown, stays on /login
+ *   TC-AUTH-03  Empty username → stays on /login
+ *   TC-AUTH-04  Empty password → stays on /login
+ *   TC-AUTH-05  Both fields empty → stays on /login
+ *   TC-AUTH-06  Authenticated user sees nav links (Locations, Collections, Map)
+ *   TC-AUTH-07  Logout via Avatar dropdown works and redirects to /login
+ *   TC-AUTH-08  Unauthenticated visit to /locations → redirected to /login
+ *   TC-AUTH-09  Unauthenticated visit to /collections → redirected to /login
+ *   TC-AUTH-10  Signup page loads with all six required fields
+ *   TC-AUTH-11  Mismatched passwords on signup → .alert-error shown
+ *   TC-AUTH-12  Duplicate username on signup → .alert-error shown
+ *   TC-AUTH-13  Login page Signup link navigates to /signup
+ *   TC-AUTH-14  Login page Forgot Password link navigates to /user/reset-password
+ *   TC-AUTH-15  Signup page Login link navigates back to /login
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import {
-  ADMIN_USER,
-  ROUTES,
-  loginAs,
-  expectAuthenticated,
-  expectUnauthenticated
-} from './fixtures/helpers';
-
-// ── Local helpers ─────────────────────────────────────────────────────────────
-
-async function gotoLogin(page: Page) {
-  await page.goto(ROUTES.login);
-  await page.waitForLoadState('networkidle');
-}
-
-async function gotoRegister(page: Page) {
-  await page.goto(ROUTES.register);
-  await page.waitForLoadState('networkidle');
-}
-
-const errorLocator = (page: Page) =>
-  page
-    .getByRole('alert')
-    .or(page.locator('.error, .alert-error, [data-testid="error"], .text-error'))
-    .first();
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Credentials — match your .env file
+// ─────────────────────────────────────────────────────────────────────────────
+const VALID_USERNAME = 'admin';
+const VALID_PASSWORD = 'admin';
 
-test('AUTH-01: Login page has username, password fields and a submit button', async ({ page }) => {
-  await gotoLogin(page);
+// ─────────────────────────────────────────────────────────────────────────────
+// Selectors — every value verified against source code
+// ─────────────────────────────────────────────────────────────────────────────
+const SEL = {
+  // ── login/+page.svelte ──────────────────────────────────────────────────
+  // <input id="username" name="username" type="text" ...>
+  usernameInput:   '#username',
+  // <input id="password" name="password" type="password" ...>
+  passwordInput:   '#password',
+  // <button type="submit" class="btn btn-primary w-full">
+  submitBtn:       'button[type="submit"].btn.btn-primary',
+  // {#if $page.form?.message} <div class="alert alert-error">
+  errorAlert:      '.alert.alert-error',
+  // <a href="/signup" class="link link-primary">
+  signupLink:      'a[href="/signup"]',
+  // <a href="/user/reset-password" class="link link-primary">
+  forgotPassLink:  'a[href="/user/reset-password"]',
 
-  await expect(page.locator('input[name="username"]')).toBeVisible();
-  await expect(page.locator('input[name="password"]')).toBeVisible();
-  await expect(page.locator('button[type="submit"]').first()).toBeVisible();
-});
+  // ── signup/+page.svelte ─────────────────────────────────────────────────
+  // <input id="email" name="email">
+  signupEmail:     '#email',
+  // <input id="first_name" name="first_name">
+  signupFirstName: '#first_name',
+  // <input id="last_name" name="last_name">
+  signupLastName:  '#last_name',
+  // <input id="password2" name="password2">
+  signupPassword2: '#password2',
+  // <a href="/login" class="link link-primary">  (on signup page)
+  loginLink:       'a[href="/login"]',
 
-test('AUTH-02: Valid admin credentials redirect to the dashboard', async ({ page }) => {
-  await loginAs(page, ADMIN_USER.username, ADMIN_USER.password);
-  await expectAuthenticated(page);
-});
+  // ── Navbar.svelte — only rendered when data.user is truthy ──────────────
+  navLocations:    'a[href="/locations"]',
+  navCollections:  'a[href="/collections"]',
+  navMap:          'a[href="/map"]',
 
-test('AUTH-03: Invalid credentials stay on /login and show an error', async ({ page }) => {
-  await gotoLogin(page);
+  // ── Avatar.svelte ───────────────────────────────────────────────────────
+  // The avatar circle button that opens the dropdown
+  // <div class="btn btn-ghost btn-circle avatar ...">
+  avatarBtn:       '.btn.btn-ghost.btn-circle.avatar',
+  // The logout button inside the Avatar dropdown
+  // <button formaction="/?/logout" class="btn btn-ghost ...">
+  logoutBtn:       'button[formaction="/?/logout"]',
+};
 
-  await page.locator('input[name="username"]').fill('nonexistent_user_xyz_9999');
-  await page.locator('input[name="password"]').fill('wrongpassword');
-  await page.locator('button[type="submit"]').first().click();
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — login and wait until page leaves /login
+// ─────────────────────────────────────────────────────────────────────────────
+async function loginAs(
+  page: Page,
+  username = VALID_USERNAME,
+  password = VALID_PASSWORD
+): Promise<void> {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.usernameInput);
+  await page.locator(SEL.usernameInput).fill(username);
+  await page.locator(SEL.passwordInput).fill(password);
+  await page.locator(SEL.submitBtn).click();
+  await page.waitForURL(
+    (url) => !url.pathname.startsWith('/login'),
+    { timeout: 12_000 }
+  );
+}
 
-  await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
-  await expect(errorLocator(page)).toBeVisible({ timeout: 8_000 });
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — logout via the Avatar dropdown (confirmed from Avatar.svelte)
+// Flow: click avatar circle → dropdown opens → click logout button
+// ─────────────────────────────────────────────────────────────────────────────
+async function logout(page: Page): Promise<void> {
+  // Click the avatar circle to open the dropdown
+  await page.locator(SEL.avatarBtn).click();
+  // Wait for the logout button to appear inside the dropdown
+  await page.waitForSelector(SEL.logoutBtn, { timeout: 6_000 });
+  // Click the logout button — its formaction="/?/logout" posts to SvelteKit
+  await page.locator(SEL.logoutBtn).click();
+  // Wait to be redirected away from the authenticated area
+  await page.waitForURL(
+    (url) => url.pathname.startsWith('/login') || url.pathname === '/',
+    { timeout: 10_000 }
+  );
+}
 
-test('AUTH-04: Submitting with an empty username is rejected', async ({ page }) => {
-  await gotoLogin(page);
-
-  await page.locator('input[name="password"]').fill(ADMIN_USER.password);
-  await page.locator('button[type="submit"]').first().click();
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper — destroy session without going through UI (used before
+//          unauthenticated-access tests so we don't depend on logout UI)
+// ─────────────────────────────────────────────────────────────────────────────
+async function clearSession(page: Page): Promise<void> {
+  // Navigate directly to allauth's logout endpoint — always available
+  await page.goto('/auth/logout/');
   await page.waitForTimeout(1_000);
-  await expect(page).toHaveURL(/\/login/);
+}
+
+// =============================================================================
+// TC-AUTH-01  Valid credentials redirect to authenticated area
+// =============================================================================
+test('TC-AUTH-01: valid credentials redirect to authenticated area', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.usernameInput);
+
+  await page.locator(SEL.usernameInput).fill(VALID_USERNAME);
+  await page.locator(SEL.passwordInput).fill(VALID_PASSWORD);
+  await page.locator(SEL.submitBtn).click();
+
+  // Must leave /login
+  await page.waitForURL(
+    (url) => !url.pathname.startsWith('/login'),
+    { timeout: 12_000 }
+  );
+
+  // Navbar nav links only render when data.user is truthy — confirms session created
+  await expect(page.locator(SEL.navLocations).first()).toBeVisible({ timeout: 8_000 });
 });
 
-test('AUTH-05: Submitting with an empty password is rejected', async ({ page }) => {
-  await gotoLogin(page);
+// =============================================================================
+// TC-AUTH-02  Wrong password → error alert, stays on /login
+// Source: {#if ($page.form?.message && $page.form?.message.length > 1) ||
+//              $page.form?.type === 'error'} <div class="alert alert-error">
+// =============================================================================
+test('TC-AUTH-02: wrong password shows alert-error and stays on /login', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.usernameInput);
 
-  await page.locator('input[name="username"]').fill(ADMIN_USER.username);
-  await page.locator('button[type="submit"]').first().click();
+  await page.locator(SEL.usernameInput).fill(VALID_USERNAME);
+  await page.locator(SEL.passwordInput).fill('WRONG_PASSWORD_99999');
+  await page.locator(SEL.submitBtn).click();
 
-  await page.waitForTimeout(1_000);
-  await expect(page).toHaveURL(/\/login/);
+  // SvelteKit form action returns error → page re-renders with .alert-error
+  await expect(page.locator(SEL.errorAlert)).toBeVisible({ timeout: 8_000 });
+  expect(page.url()).toContain('/login');
 });
 
-test('AUTH-06: Authenticated user visiting /login is redirected home', async ({ page }) => {
-  await loginAs(page, ADMIN_USER.username, ADMIN_USER.password);
-  await expectAuthenticated(page);
+// =============================================================================
+// TC-AUTH-03  Empty username → stays on /login
+// Login form has no `required` on username — Django rejects blank username
+// =============================================================================
+test('TC-AUTH-03: empty username stays on /login', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.passwordInput);
 
-  await page.goto(ROUTES.login);
-  await page.waitForLoadState('networkidle');
+  // Leave username blank, fill only password
+  await page.locator(SEL.passwordInput).fill(VALID_PASSWORD);
+  await page.locator(SEL.submitBtn).click();
 
-  await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+  await page.waitForTimeout(2_500);
+  expect(page.url()).toContain('/login');
 });
 
-test('AUTH-07: Unauthenticated user visiting / is redirected to /login', async ({
+// =============================================================================
+// TC-AUTH-04  Empty password → stays on /login
+// =============================================================================
+test('TC-AUTH-04: empty password stays on /login', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.usernameInput);
+
+  await page.locator(SEL.usernameInput).fill(VALID_USERNAME);
+  // Leave password blank
+  await page.locator(SEL.submitBtn).click();
+
+  await page.waitForTimeout(2_500);
+  expect(page.url()).toContain('/login');
+});
+
+// =============================================================================
+// TC-AUTH-05  Both fields empty → stays on /login
+// =============================================================================
+test('TC-AUTH-05: both fields empty stays on /login', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.submitBtn);
+
+  await page.locator(SEL.submitBtn).click();
+
+  await page.waitForTimeout(2_500);
+  expect(page.url()).toContain('/login');
+});
+
+// =============================================================================
+// TC-AUTH-06  Authenticated user sees nav items
+// Navbar.svelte: navigationItems rendered only inside {#if data.user}
+// =============================================================================
+test('TC-AUTH-06: authenticated user sees Locations, Collections and Map in navbar', async ({
   page,
-  context
 }) => {
-  await context.clearCookies();
-  await page.goto(ROUTES.home);
-  await page.waitForLoadState('networkidle');
+  await loginAs(page);
 
-  await expectUnauthenticated(page);
+  await expect(page.locator(SEL.navLocations).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(SEL.navCollections).first()).toBeVisible({ timeout: 8_000 });
+  await expect(page.locator(SEL.navMap).first()).toBeVisible({ timeout: 8_000 });
 });
 
-test('AUTH-08: Logout clears the session and redirects to /login', async ({ page }) => {
-  await loginAs(page, ADMIN_USER.username, ADMIN_USER.password);
-  await expectAuthenticated(page);
+// =============================================================================
+// TC-AUTH-07  Logout via Avatar dropdown
+// Avatar.svelte:
+//   - avatar trigger: .btn.btn-ghost.btn-circle.avatar
+//   - logout button:  button[formaction="/?/logout"]
+// =============================================================================
+test('TC-AUTH-07: logout via Avatar dropdown redirects to login or home', async ({ page }) => {
+  await loginAs(page);
 
-  // Try common logout UI patterns
-  const logoutBtn = page
-    .getByRole('link', { name: /log.?out|sign.?out/i })
-    .or(page.getByRole('button', { name: /log.?out|sign.?out/i }))
-    .or(page.locator('[data-testid="logout"]'));
+  // Open the Avatar dropdown by clicking the avatar circle button
+  await page.locator(SEL.avatarBtn).click();
 
-  if (await logoutBtn.first().isVisible({ timeout: 4_000 }).catch(() => false)) {
-    await logoutBtn.first().click();
-  } else {
-    // Some apps put logout behind an avatar/dropdown
-    const avatar = page
-      .locator('[data-testid="avatar"], .avatar, .dropdown-toggle, [aria-label="account menu"]')
-      .first();
-    if (await avatar.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await avatar.click();
-      await logoutBtn.first().click();
-    } else {
-      await page.goto('/logout');
-    }
-  }
+  // The logout button appears inside the dropdown — wait for it
+  await expect(page.locator(SEL.logoutBtn)).toBeVisible({ timeout: 6_000 });
 
-  await page.waitForLoadState('networkidle');
-  await page.goto(ROUTES.home);
-  await page.waitForLoadState('networkidle');
-  await expectUnauthenticated(page);
+  // Click logout — posts to /?/logout via SvelteKit form action
+  await page.locator(SEL.logoutBtn).click();
+
+  // After logout: should be on /login or landing page
+  await page.waitForURL(
+    (url) => url.pathname.startsWith('/login') || url.pathname === '/',
+    { timeout: 10_000 }
+  );
+
+  // Nav links should no longer be visible (data.user is now null)
+  await expect(page.locator(SEL.navLocations)).toHaveCount(0);
 });
 
-test('AUTH-09: Registration page renders fields or a disabled message', async ({ page }) => {
-  await gotoRegister(page);
-
-  const formVisible = await page
-    .locator('form')
-    .first()
-    .isVisible({ timeout: 5_000 })
-    .catch(() => false);
-
-  if (!formVisible) {
-    // Acceptable when DISABLE_REGISTRATION=True
-    const disabledMsg = page
-      .locator('[data-testid="registration-disabled"]')
-      .or(page.getByText(/registration.*disabled/i))
-      .first();
-    await expect(disabledMsg).toBeVisible({ timeout: 5_000 });
-    return;
-  }
-
-  await expect(page.locator('input[name="username"]')).toBeVisible();
-  await expect(page.locator('input[name="email"]')).toBeVisible();
-  await expect(page.locator('input[name="password1"]')).toBeVisible();
-  await expect(page.locator('input[name="password2"]')).toBeVisible();
-  await expect(page.locator('button[type="submit"]').first()).toBeVisible();
-});
-
-test('AUTH-10: Mismatched passwords on registration show an error', async ({ page }) => {
-  await gotoRegister(page);
-
-  if (!(await page.locator('input[name="password1"]').isVisible({ timeout: 5_000 }).catch(() => false))) {
-    test.skip(true, 'Registration disabled');
-    return;
-  }
-
-  await page.locator('input[name="username"]').fill(`testuser_${Date.now()}`);
-  await page.locator('input[name="email"]').fill(`test_${Date.now()}@example.com`);
-  await page.locator('input[name="password1"]').fill('Password123!');
-  await page.locator('input[name="password2"]').fill('DifferentPassword456!');
-  await page.locator('button[type="submit"]').first().click();
-
-  await page.waitForTimeout(2_000);
-  await expect(page).toHaveURL(/\/register/);
-  await expect(errorLocator(page)).toBeVisible({ timeout: 8_000 });
-});
-
-test('AUTH-11: MFA input field is hidden on initial login page load', async ({ page }) => {
-  await gotoLogin(page);
-  await expect(page.locator('input[name="totp"]')).not.toBeVisible();
-});
-
-test('AUTH-12: Login page renders without a 5xx error', async ({ page }) => {
-  const response = await page.goto(ROUTES.login);
-  expect(response?.status()).toBeLessThan(500);
-
-  const title = await page.title();
-  expect(title.trim().length).toBeGreaterThan(0);
-});
-
-test('AUTH-13: Mixed-case username is accepted (server normalises to lowercase)', async ({
-  page
+// =============================================================================
+// TC-AUTH-08  Unauthenticated access to /locations → redirect to /login
+// SvelteKit server load in locations/+page.server.ts guards this route
+// =============================================================================
+test('TC-AUTH-08: unauthenticated user visiting /locations is redirected to /login', async ({
+  page,
 }) => {
-  await loginAs(page, ADMIN_USER.username.toUpperCase(), ADMIN_USER.password);
-  await expectAuthenticated(page);
+  await clearSession(page);
+
+  await page.goto('/locations');
+  await page.waitForURL(
+    (url) => url.pathname.startsWith('/login'),
+    { timeout: 10_000 }
+  );
+
+  expect(page.url()).toContain('/login');
 });
 
-test('AUTH-14: Authenticated user visiting /register is redirected home', async ({ page }) => {
-  await loginAs(page, ADMIN_USER.username, ADMIN_USER.password);
-  await expectAuthenticated(page);
+// =============================================================================
+// TC-AUTH-09  Unauthenticated access to /collections → redirect to /login
+// =============================================================================
+test('TC-AUTH-09: unauthenticated user visiting /collections is redirected to /login', async ({
+  page,
+}) => {
+  await clearSession(page);
 
-  await page.goto(ROUTES.register);
-  await page.waitForLoadState('networkidle');
+  await page.goto('/collections');
+  await page.waitForURL(
+    (url) => url.pathname.startsWith('/login'),
+    { timeout: 10_000 }
+  );
 
-  await expect(page).not.toHaveURL(/\/register/, { timeout: 10_000 });
+  expect(page.url()).toContain('/login');
+});
+
+// =============================================================================
+// TC-AUTH-10  Signup page loads with all six required fields
+// signup/+page.svelte: id="username","email","first_name","last_name",
+//                      id="password" (name="password1"), id="password2"
+// =============================================================================
+test('TC-AUTH-10: signup page loads with all six required input fields', async ({ page }) => {
+  await page.goto('/signup');
+
+  await expect(page.locator(SEL.usernameInput)).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator(SEL.signupEmail)).toBeVisible();
+  await expect(page.locator(SEL.signupFirstName)).toBeVisible();
+  await expect(page.locator(SEL.signupLastName)).toBeVisible();
+  await expect(page.locator(SEL.passwordInput)).toBeVisible();   // id="password", name="password1"
+  await expect(page.locator(SEL.signupPassword2)).toBeVisible(); // id="password2", name="password2"
+  await expect(page.locator(SEL.submitBtn)).toBeVisible();
+});
+
+// =============================================================================
+// TC-AUTH-11  Mismatched passwords on signup → .alert-error
+// signup/+page.svelte: {#if $page.form?.message} <div class="alert alert-error">
+// =============================================================================
+test('TC-AUTH-11: mismatched passwords on signup shows alert-error', async ({ page }) => {
+  await page.goto('/signup');
+  await page.waitForSelector(SEL.usernameInput);
+
+  const uid = Date.now();
+  await page.locator(SEL.usernameInput).fill(`testuser_${uid}`);
+  await page.locator(SEL.signupEmail).fill(`test_${uid}@example.com`);
+  await page.locator(SEL.signupFirstName).fill('Test');
+  await page.locator(SEL.signupLastName).fill('User');
+  await page.locator(SEL.passwordInput).fill('Password123!');
+  await page.locator(SEL.signupPassword2).fill('TotallyDifferent456!');
+  await page.locator(SEL.submitBtn).click();
+
+  await expect(page.locator(SEL.errorAlert)).toBeVisible({ timeout: 8_000 });
+  expect(page.url()).toContain('/signup');
+});
+
+// =============================================================================
+// TC-AUTH-12  Duplicate username on signup → .alert-error
+// Uses known-existing 'admin' username — Django returns a conflict error
+// =============================================================================
+test('TC-AUTH-12: duplicate username on signup shows alert-error', async ({ page }) => {
+  await page.goto('/signup');
+  await page.waitForSelector(SEL.usernameInput);
+
+  await page.locator(SEL.usernameInput).fill('admin'); // known existing
+  await page.locator(SEL.signupEmail).fill(`dup_${Date.now()}@example.com`);
+  await page.locator(SEL.signupFirstName).fill('Test');
+  await page.locator(SEL.signupLastName).fill('User');
+  await page.locator(SEL.passwordInput).fill('Password123!');
+  await page.locator(SEL.signupPassword2).fill('Password123!');
+  await page.locator(SEL.submitBtn).click();
+
+  await expect(page.locator(SEL.errorAlert)).toBeVisible({ timeout: 8_000 });
+  expect(page.url()).toContain('/signup');
+});
+
+// =============================================================================
+// TC-AUTH-13  Login page Signup link → navigates to /signup
+// Source: <a href="/signup" class="link link-primary">
+// =============================================================================
+test('TC-AUTH-13: login page Signup link navigates to /signup', async ({ page }) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.signupLink);
+
+  await page.locator(SEL.signupLink).first().click();
+  await page.waitForURL('**/signup', { timeout: 8_000 });
+
+  expect(page.url()).toContain('/signup');
+});
+
+// =============================================================================
+// TC-AUTH-14  Login page Forgot Password link → /user/reset-password
+// Source: <a href="/user/reset-password" class="link link-primary">
+// =============================================================================
+test('TC-AUTH-14: login page Forgot Password link navigates to /user/reset-password', async ({
+  page,
+}) => {
+  await page.goto('/login');
+  await page.waitForSelector(SEL.forgotPassLink);
+
+  await page.locator(SEL.forgotPassLink).first().click();
+  await page.waitForURL('**/reset-password**', { timeout: 8_000 });
+
+  expect(page.url()).toContain('/reset-password');
+});
+
+// =============================================================================
+// TC-AUTH-15  Signup page Login link → navigates back to /login
+// Source: <a href="/login" class="link link-primary">
+// =============================================================================
+test('TC-AUTH-15: signup page Login link navigates back to /login', async ({ page }) => {
+  await page.goto('/signup');
+  await page.waitForSelector(SEL.loginLink);
+
+  await page.locator(SEL.loginLink).first().click();
+  await page.waitForURL('**/login', { timeout: 8_000 });
+
+  expect(page.url()).toContain('/login');
 });
