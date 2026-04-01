@@ -11,8 +11,8 @@
 import { test, expect, uid } from '../fixtures';
 
 const VALID_USER = {
-  username: process.env.TEST_USERNAME ?? 'kamona',
-  password: process.env.TEST_PASSWORD ?? '123456',
+  username: process.env.TEST_USERNAME ?? 'admin',
+  password: process.env.TEST_PASSWORD ?? 'admin',
 };
 
 // ─── Login (unauthenticated) ──────────────────────────────────────────────────

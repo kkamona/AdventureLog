@@ -18,8 +18,8 @@ setup('authenticate as admin', async ({ page }) => {
   await expect(page.locator('h2')).toContainText('Login');
 
   // Step 2: Fill credentials
-  await page.fill('#username', process.env.TEST_USERNAME ?? 'kamona');
-  await page.fill('#password', process.env.TEST_PASSWORD ?? '123456');
+  await page.fill('#username', process.env.TEST_USERNAME ?? 'admin');
+  await page.fill('#password', process.env.TEST_PASSWORD ?? 'admin');
 
   // Step 3: Submit the form
   await page.click('button[type="submit"]');
