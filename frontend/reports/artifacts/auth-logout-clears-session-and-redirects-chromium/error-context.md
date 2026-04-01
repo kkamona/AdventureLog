@@ -1,0 +1,91 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "AdventureLog AdventureLog" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]:
+        - img "AdventureLog" [ref=e7]
+        - generic [ref=e8]: AdventureLog
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Login" [ref=e11] [cursor=pointer]
+        - button "Signup" [ref=e12] [cursor=pointer]
+      - generic [ref=e13]:
+        - button [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+        - option "English" [selected]
+        - option "Español"
+        - option "Français"
+        - option "Deutsch"
+        - option "Italiano"
+        - option "中文"
+        - option "Nederlands"
+        - option "Svenska"
+        - option "Polski"
+        - option "한국어"
+        - option "Norsk"
+        - option "Русский"
+        - option "日本語"
+        - option "العربية"
+        - option "Português (Brasil)"
+        - option "Română"
+        - option "Slovenský"
+        - option "Türkçe"
+        - option "Українська"
+        - option "Magyar"
+        - option "Light"
+        - option "Dark"
+        - option "Dim"
+        - option "Night"
+        - option "Forest"
+        - option "Aqua"
+        - option "Aesthetic Light"
+        - option "Aesthetic Dark"
+        - option "Northern Lights"
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - img [ref=e22]
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]:
+              - img [ref=e29]
+              - generic [ref=e31]: Start Your Journey
+            - heading "Discover the World's Most Thrilling Adventures" [level=1] [ref=e32]
+          - paragraph [ref=e33]: Discover and plan your next adventure with AdventureLog. Explore breathtaking destinations, create custom itineraries, and stay connected on the go.
+          - generic [ref=e34]:
+            - button "Login" [ref=e35] [cursor=pointer]:
+              - text: Login
+              - img [ref=e36]
+            - button "Signup" [ref=e38] [cursor=pointer]
+        - generic [ref=e43]:
+          - img "Hoboken, New Jersey, USA" [ref=e44]
+          - generic [ref=e48]: Hoboken, New Jersey, USA
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - img [ref=e56]
+          - generic [ref=e58]: Key Features
+        - heading "Discover, Plan, and Explore with Ease" [level=2] [ref=e59]
+        - paragraph [ref=e60]: AdventureLog is designed to simplify your journey, providing you with the tools and resources to plan, pack, and navigate your next unforgettable adventure.
+      - generic [ref=e61]:
+        - generic [ref=e62]:
+          - generic [ref=e64]:
+            - img [ref=e66]
+            - generic [ref=e68]:
+              - heading "Travel Log" [level=3] [ref=e69]
+              - paragraph [ref=e70]: Keep track of your adventures with a personalized travel log and share your experiences with friends and family.
+          - generic [ref=e72]:
+            - img [ref=e74]
+            - generic [ref=e76]:
+              - heading "Trip Planning" [level=3] [ref=e77]
+              - paragraph [ref=e78]: Easily create custom itineraries and get a day-by-day breakdown of your trip.
+          - generic [ref=e80]:
+            - img [ref=e82]
+            - generic [ref=e84]:
+              - heading "Travel Map" [level=3] [ref=e85]
+              - paragraph [ref=e86]: View your travels throughout the world with an interactive map and explore new destinations.
+        - img "World map with pins" [ref=e89]
+```

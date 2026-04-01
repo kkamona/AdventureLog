@@ -1,0 +1,22 @@
+{
+  "name": "adventurelog-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:auth": "playwright test tests/auth.spec.ts",
+    "test:locations": "playwright test tests/locations.spec.ts",
+    "test:collections": "playwright test tests/collections.spec.ts",
+    "test:map": "playwright test tests/map.spec.ts",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.4.0"
+  }
+}

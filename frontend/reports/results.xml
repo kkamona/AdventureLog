@@ -1,0 +1,119 @@
+<testsuites id="" name="" tests="15" failures="2" skipped="13" errors="0" time="124.234922">
+<testsuite name="locations.spec.ts" timestamp="2026-04-01T06:20:05.882Z" hostname="chromium" tests="15" failures="2" skipped="13" time="113.579" errors="0">
+<testcase name="create: new location appears in card list" classname="locations.spec.ts" time="60.532">
+<failure message="locations.spec.ts:7:1 create: new location appears in card list" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:7:1 › create: new location appears in card list ───────────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('button, a').filter({ hasText: /new\s*(adventure|location)|\+/i }).first()
+
+
+       at page-objects\LocationPage.ts:28
+
+      26 |       .filter({ hasText: /new\s*(adventure|location)|\+/i })
+      27 |       .first()
+    > 28 |       .click();
+         |        ^
+      29 |     await expect(this.modal).toBeVisible({ timeout: 8_000 });
+      30 |   }
+      31 |
+        at LocationPage.openCreateModal (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:28:8)
+        at LocationPage.create (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:46:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:11:12
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\reports\artifacts\locations-create-new-location-appears-in-card-list-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\reports\artifacts\locations-create-new-location-appears-in-card-list-chromium\error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|artifacts\locations-create-new-location-appears-in-card-list-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|artifacts\locations-create-new-location-appears-in-card-list-chromium\error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="create: name-only (minimal) location succeeds" classname="locations.spec.ts" time="42.913">
+<failure message="locations.spec.ts:15:1 create: name-only (minimal) location succeeds" type="FAILURE">
+<![CDATA[  [chromium] › locations.spec.ts:15:1 › create: name-only (minimal) location succeeds ──────────────
+
+    Error: locator.click: Target page, context or browser has been closed
+    Call log:
+      - waiting for locator('button, a').filter({ hasText: /new\s*(adventure|location)|\+/i }).first()
+
+
+       at page-objects\LocationPage.ts:28
+
+      26 |       .filter({ hasText: /new\s*(adventure|location)|\+/i })
+      27 |       .first()
+    > 28 |       .click();
+         |        ^
+      29 |     await expect(this.modal).toBeVisible({ timeout: 8_000 });
+      30 |   }
+      31 |
+        at LocationPage.openCreateModal (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:28:8)
+        at LocationPage.create (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:46:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:19:12
+]]>
+</failure>
+</testcase>
+<testcase name="create: submitting empty name keeps modal open" classname="locations.spec.ts" time="10.134">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="create: XSS payload in name field is not executed" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="edit: updated name reflects in card list" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="edit: cancel discards changes" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="delete: confirming removes card from list" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="delete: cancelling keeps card in list" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="search: typing a name filters to matching cards" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="search: gibberish query shows empty state" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="API: GET /api/locations/ returns 200 and array" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="API: POST /api/locations/ creates record with correct name" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="API: PATCH /api/locations/:id/ updates name" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="API: DELETE /api/locations/:id/ returns 204" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="detail: /locations/:id shows location name in heading" classname="locations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

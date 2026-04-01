@@ -1,683 +1,364 @@
-<testsuites id="" name="" tests="19" failures="16" skipped="3" errors="0" time="702.7418110000001">
-<testsuite name="locations.spec.ts" timestamp="2026-03-31T08:03:05.863Z" hostname="chromium" tests="19" failures="16" skipped="3" time="679.063" errors="0">
-<testcase name="Create Location › create with full valid data shows new card in list" classname="locations.spec.ts" time="60.297">
-<failure message="locations.spec.ts:41:3 create with full valid data shows new card in list" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:41:3 › Create Location › create with full valid data shows new card in list 
+<testsuites id="" name="" tests="12" failures="9" skipped="3" errors="0" time="142.872769">
+<testsuite name="mapping.spec.ts" timestamp="2026-03-31T11:48:57.058Z" hostname="chromium" tests="12" failures="9" skipped="3" time="123.226" errors="0">
+<testcase name="Map Page Load › MapLibre canvas renders within timeout" classname="mapping.spec.ts" time="22.582">
+<failure message="mapping.spec.ts:58:3 MapLibre canvas renders within timeout" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:58:3 › Map Page Load › MapLibre canvas renders within timeout ───────
 
-    Test timeout of 60000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Locator: locator('.maplibregl-map').first()
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('.maplibregl-map').first()
 
 
-       at page-objects\LocationPage.ts:91
+       at page-objects\MapPage.ts:39
 
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:44:5
+      37 |
+      38 |   async expectMapLoaded() {
+    > 39 |     await expect(this.mapContainer).toBeVisible({ timeout: 20_000 });
+         |                                     ^
+      40 |     // Give MapLibre time to initialise tiles
+      41 |     await this.page.waitForTimeout(2_000);
+      42 |   }
+        at MapPage.expectMapLoaded (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:39:37)
+        at MapPage.gotoMap (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:35:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:60:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Page-Load-MapLibre-canvas-renders-within-timeout-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Page-Load-MapLibre-canvas-renders-within-timeout-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Page-Load-MapLibre-canvas-renders-within-timeout-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Create-Location--3a40e-data-shows-new-card-in-list-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Page-Load-MapLibre-canvas-renders-within-timeout-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Create Location › create with name only (minimal) succeeds" classname="locations.spec.ts" time="60.393">
-<failure message="locations.spec.ts:48:3 create with name only (minimal) succeeds" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:48:3 › Create Location › create with name only (minimal) succeeds ─
+<testcase name="Map Page Load › map page has no fatal JS errors on load" classname="mapping.spec.ts" time="22.445">
+<failure message="mapping.spec.ts:64:3 map page has no fatal JS errors on load" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:64:3 › Map Page Load › map page has no fatal JS errors on load ──────
 
-    Test timeout of 60000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Locator: locator('.maplibregl-map').first()
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('.maplibregl-map').first()
 
 
-       at page-objects\LocationPage.ts:91
+       at page-objects\MapPage.ts:39
 
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:51:5
+      37 |
+      38 |   async expectMapLoaded() {
+    > 39 |     await expect(this.mapContainer).toBeVisible({ timeout: 20_000 });
+         |                                     ^
+      40 |     // Give MapLibre time to initialise tiles
+      41 |     await this.page.waitForTimeout(2_000);
+      42 |   }
+        at MapPage.expectMapLoaded (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:39:37)
+        at MapPage.gotoMap (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:35:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:72:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Page-Load-map--f1d8a--no-fatal-JS-errors-on-load-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Page-Load-map--f1d8a--no-fatal-JS-errors-on-load-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Page-Load-map--f1d8a--no-fatal-JS-errors-on-load-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Create-Location--0ba05--name-only-minimal-succeeds-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Page-Load-map--f1d8a--no-fatal-JS-errors-on-load-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Create Location › submit without name shows required-field error" classname="locations.spec.ts" time="60.162">
-<failure message="locations.spec.ts:55:3 submit without name shows required-field error" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:55:3 › Create Location › submit without name shows required-field error 
+<testcase name="Map Controls › zoom-in button is present and clickable" classname="mapping.spec.ts" time="22.601">
+<failure message="mapping.spec.ts:89:3 zoom-in button is present and clickable" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:89:3 › Map Controls › zoom-in button is present and clickable ───────
 
-    Test timeout of 60000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.click: Test timeout of 60000ms exceeded.
+    Locator: locator('.maplibregl-map').first()
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for locator('button[type="submit"], button').filter({ hasText: /save|update|create/i }).first()
-        - locator resolved to <button class="btn btn-primary btn-wide mt-6 gap-2">…</button>
-      - attempting click action
-        2 × waiting for element to be visible, enabled and stable
-          - element is visible, enabled and stable
-          - scrolling into view if needed
-          - done scrolling
-          - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-        - retrying click action
-        - waiting 20ms
-        2 × waiting for element to be visible, enabled and stable
-          - element is visible, enabled and stable
-          - scrolling into view if needed
-          - done scrolling
-          - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-        - retrying click action
-          - waiting 100ms
-        26 × waiting for element to be visible, enabled and stable
-           - element is visible, enabled and stable
-           - scrolling into view if needed
-           - done scrolling
-           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-         - retrying click action
-           - waiting 500ms
-           - waiting for element to be visible, enabled and stable
-           - element is visible, enabled and stable
-           - scrolling into view if needed
-           - done scrolling
-           - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-         - retrying click action
-           - waiting 500ms
-           - waiting for element to be visible, enabled and stable
-           - element is visible, enabled and stable
-           - scrolling into view if needed
-           - done scrolling
-           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-         - retrying click action
-           - waiting 500ms
-           - waiting for element to be visible, enabled and stable
-           - element is visible, enabled and stable
-           - scrolling into view if needed
-           - done scrolling
-           - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-         - retrying click action
-           - waiting 500ms
-        - waiting for element to be visible, enabled and stable
-        - element is visible, enabled and stable
-        - scrolling into view if needed
-        - done scrolling
-        - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-      - retrying click action
-        - waiting 500ms
-        - waiting for element to be visible, enabled and stable
-        - element is visible, enabled and stable
-        - scrolling into view if needed
-        - done scrolling
-        - <div class="card-body p-4">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-      - retrying click action
-        - waiting 500ms
-        - waiting for element to be visible, enabled and stable
-        - element is visible, enabled and stable
-        - scrolling into view if needed
-        - done scrolling
-        - <div class="card-body p-6">…</div> from <dialog open="" id="my_modal_1" class="modal backdrop-blur-sm">…</dialog> subtree intercepts pointer events
-      - retrying click action
-        - waiting 500ms
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('.maplibregl-map').first()
 
 
-      58 |     await lp.openCreateModal();
-      59 |     // Leave name empty; attempt to save
-    > 60 |     await lp.saveButton.click();
-         |                         ^
-      61 |     // Form should NOT dismiss; either HTML5 validation or a visible error
-      62 |     const modalStillOpen = await lp.modal.isVisible().catch(() => false);
-      63 |     const validationVisible = await page
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:60:25
+       at page-objects\MapPage.ts:39
+
+      37 |
+      38 |   async expectMapLoaded() {
+    > 39 |     await expect(this.mapContainer).toBeVisible({ timeout: 20_000 });
+         |                                     ^
+      40 |     // Give MapLibre time to initialise tiles
+      41 |     await this.page.waitForTimeout(2_000);
+      42 |   }
+        at MapPage.expectMapLoaded (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:39:37)
+        at MapPage.gotoMap (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:35:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:91:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Create-Location--36368--shows-required-field-error-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Controls-zoom-in-button-is-present-and-clickable-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Create-Location--36368--shows-required-field-error-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Controls-zoom-in-button-is-present-and-clickable-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Create-Location--36368--shows-required-field-error-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-zoom-in-button-is-present-and-clickable-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Create-Location--36368--shows-required-field-error-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-zoom-in-button-is-present-and-clickable-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Create Location › XSS payload in name is not executed" classname="locations.spec.ts" time="60.148">
-<failure message="locations.spec.ts:71:3 XSS payload in name is not executed" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:71:3 › Create Location › XSS payload in name is not executed ──────
+<testcase name="Map Controls › zoom-out button is present and clickable" classname="mapping.spec.ts" time="23.342">
+<failure message="mapping.spec.ts:97:3 zoom-out button is present and clickable" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:97:3 › Map Controls › zoom-out button is present and clickable ──────
 
-    Test timeout of 60000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Locator: locator('.maplibregl-map').first()
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('.maplibregl-map').first()
 
 
-      81 |     });
-      82 |
-    > 83 |     await lp.nameInput.fill(LOCATIONS.xss.name);
-         |                        ^
-      84 |     await lp.saveButton.click();
-      85 |     await page.waitForTimeout(1500);
-      86 |
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:83:24
+       at page-objects\MapPage.ts:39
+
+      37 |
+      38 |   async expectMapLoaded() {
+    > 39 |     await expect(this.mapContainer).toBeVisible({ timeout: 20_000 });
+         |                                     ^
+      40 |     // Give MapLibre time to initialise tiles
+      41 |     await this.page.waitForTimeout(2_000);
+      42 |   }
+        at MapPage.expectMapLoaded (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:39:37)
+        at MapPage.gotoMap (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:35:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:99:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Controls-zoom--4b9ae-on-is-present-and-clickable-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Controls-zoom--4b9ae-on-is-present-and-clickable-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-zoom--4b9ae-on-is-present-and-clickable-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Create-Location--a0da6-oad-in-name-is-not-executed-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-zoom--4b9ae-on-is-present-and-clickable-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Create Location › special characters in name are preserved" classname="locations.spec.ts" time="60.135">
-<failure message="locations.spec.ts:90:3 special characters in name are preserved" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:90:3 › Create Location › special characters in name are preserved ─
+<testcase name="Map Controls › repeated zoom operations do not crash the map" classname="mapping.spec.ts" time="22.837">
+<failure message="mapping.spec.ts:105:3 repeated zoom operations do not crash the map" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:105:3 › Map Controls › repeated zoom operations do not crash the map 
 
-    Test timeout of 60000ms exceeded.
+    Error: expect(locator).toBeVisible() failed
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Locator: locator('.maplibregl-map').first()
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
     Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
+      - Expect "toBeVisible" with timeout 20000ms
+      - waiting for locator('.maplibregl-map').first()
 
 
-       at page-objects\LocationPage.ts:91
+       at page-objects\MapPage.ts:39
 
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:93:5
+      37 |
+      38 |   async expectMapLoaded() {
+    > 39 |     await expect(this.mapContainer).toBeVisible({ timeout: 20_000 });
+         |                                     ^
+      40 |     // Give MapLibre time to initialise tiles
+      41 |     await this.page.waitForTimeout(2_000);
+      42 |   }
+        at MapPage.expectMapLoaded (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:39:37)
+        at MapPage.gotoMap (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\MapPage.ts:35:16)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:107:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Controls-repea-37cc5-ations-do-not-crash-the-map-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Controls-repea-37cc5-ations-do-not-crash-the-map-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-repea-37cc5-ations-do-not-crash-the-map-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Create-Location--505a8-cters-in-name-are-preserved-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Controls-repea-37cc5-ations-do-not-crash-the-map-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Edit Location › edit updates name visible in card" classname="locations.spec.ts" time="60.124">
-<failure message="locations.spec.ts:101:3 edit updates name visible in card" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:101:3 › Edit Location › edit updates name visible in card ─────────
+<testcase name="Map Markers › seeding a geolocated location and reloading map shows at least one .maplibregl-marker" classname="mapping.spec.ts" time="1.775">
+<failure message="mapping.spec.ts:117:3 seeding a geolocated location and reloading map shows at least one .maplibregl-marker" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:117:3 › Map Markers › seeding a geolocated location and reloading map shows at least one .maplibregl-marker 
 
-    Test timeout of 60000ms exceeded.
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
 
-    Error: locator.click: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('[data-testid="location-card"], .card').filter({ has: locator('.card-title, h2, h3') }).first().locator('button[aria-label*="menu"], button').filter({ hasText: /⋮|\.\.\.|\.\.\.|more/i })
-
-
-       at page-objects\LocationPage.ts:117
-
-      115 |
-      116 |   async openFirstCardMenu() {
-    > 117 |     await this.firstCardMenu.click();
-          |                              ^
-      118 |   }
-      119 |
-      120 |   async deleteFirstLocation() {
-        at LocationPage.openFirstCardMenu (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:117:30)
-        at LocationPage.editFirstLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:128:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:111:14
+      24 |
+      25 | async function seedGeolocatedLocation(page: any, lat = 48.8566, lng = 2.3522) {
+    > 26 |   return page.evaluate(
+         |               ^
+      27 |     async ({ endpoint, lat, lng }: { endpoint: string; lat: number; lng: number }) => {
+      28 |       const res = await fetch(endpoint, {
+      29 |         method: 'POST',
+        at seedGeolocatedLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:26:15)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:120:23
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Markers-seedin-d5c90-least-one-maplibregl-marker-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Markers-seedin-d5c90-least-one-maplibregl-marker-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-seedin-d5c90-least-one-maplibregl-marker-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Edit-Location-edit-updates-name-visible-in-card-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-seedin-d5c90-least-one-maplibregl-marker-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Edit Location › cancel edit discards changes" classname="locations.spec.ts" time="60.146">
-<failure message="locations.spec.ts:118:3 cancel edit discards changes" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:118:3 › Edit Location › cancel edit discards changes ──────────────
+<testcase name="Map Markers › clicking a marker opens a popup" classname="mapping.spec.ts" time="2.435">
+<failure message="mapping.spec.ts:142:3 clicking a marker opens a popup" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:142:3 › Map Markers › clicking a marker opens a popup ───────────────
 
-    Test timeout of 60000ms exceeded.
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
 
-    Error: locator.click: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('[data-testid="location-card"], .card').filter({ has: locator('.card-title, h2, h3') }).first().locator('button[aria-label*="menu"], button').filter({ hasText: /⋮|\.\.\.|\.\.\.|more/i })
-
-
-       at page-objects\LocationPage.ts:117
-
-      115 |
-      116 |   async openFirstCardMenu() {
-    > 117 |     await this.firstCardMenu.click();
-          |                              ^
-      118 |   }
-      119 |
-      120 |   async deleteFirstLocation() {
-        at LocationPage.openFirstCardMenu (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:117:30)
-        at LocationPage.editFirstLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:128:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:130:14
+      24 |
+      25 | async function seedGeolocatedLocation(page: any, lat = 48.8566, lng = 2.3522) {
+    > 26 |   return page.evaluate(
+         |               ^
+      27 |     async ({ endpoint, lat, lng }: { endpoint: string; lat: number; lng: number }) => {
+      28 |       const res = await fetch(endpoint, {
+      29 |         method: 'POST',
+        at seedGeolocatedLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:26:15)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:143:23
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Markers-clicking-a-marker-opens-a-popup-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Markers-clicking-a-marker-opens-a-popup-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-clicking-a-marker-opens-a-popup-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Edit-Location-cancel-edit-discards-changes-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-clicking-a-marker-opens-a-popup-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Delete Location › delete removes location card from list" classname="locations.spec.ts" time="60.139">
-<failure message="locations.spec.ts:147:3 delete removes location card from list" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:147:3 › Delete Location › delete removes location card from list ──
+<testcase name="Map Markers › popup contains a link to /locations/:id" classname="mapping.spec.ts" time="2.675">
+<failure message="mapping.spec.ts:163:3 popup contains a link to /locations/:id" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:163:3 › Map Markers › popup contains a link to /locations/:id ───────
 
-    Test timeout of 60000ms exceeded.
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
-
-
-       at page-objects\LocationPage.ts:91
-
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:153:5
+      24 |
+      25 | async function seedGeolocatedLocation(page: any, lat = 48.8566, lng = 2.3522) {
+    > 26 |   return page.evaluate(
+         |               ^
+      27 |     async ({ endpoint, lat, lng }: { endpoint: string; lat: number; lng: number }) => {
+      28 |       const res = await fetch(endpoint, {
+      29 |         method: 'POST',
+        at seedGeolocatedLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:26:15)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:164:23
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Map-Markers-popup-contains-a-link-to-locations-id-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Map-Markers-popup-contains-a-link-to-locations-id-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-popup-contains-a-link-to-locations-id-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Delete-Location--2a836-ves-location-card-from-list-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Map-Markers-popup-contains-a-link-to-locations-id-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Delete Location › cancelling delete confirmation keeps card in list" classname="locations.spec.ts" time="60.147">
-<failure message="locations.spec.ts:166:3 cancelling delete confirmation keeps card in list" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:166:3 › Delete Location › cancelling delete confirmation keeps card in list 
+<testcase name="Cluster Behaviour › map renders without errors when many close-together locations exist" classname="mapping.spec.ts" time="2.532">
+<failure message="mapping.spec.ts:192:3 map renders without errors when many close-together locations exist" type="FAILURE">
+<![CDATA[  [chromium] › mapping.spec.ts:192:3 › Cluster Behaviour › map renders without errors when many close-together locations exist 
 
-    Test timeout of 60000ms exceeded.
+    Error: page.evaluate: SyntaxError: Unexpected token '<', "
+    <!doctype "... is not valid JSON
 
-    Error: locator.fill: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
-
-
-       at page-objects\LocationPage.ts:91
-
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:171:5
+      24 |
+      25 | async function seedGeolocatedLocation(page: any, lat = 48.8566, lng = 2.3522) {
+    > 26 |   return page.evaluate(
+         |               ^
+      27 |     async ({ endpoint, lat, lng }: { endpoint: string; lat: number; lng: number }) => {
+      28 |       const res = await fetch(endpoint, {
+      29 |         method: 'POST',
+        at seedGeolocatedLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:26:15)
+        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\mapping.spec.ts:198:25
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\test-failed-1.png
+    ..\..\reports\test-results\mapping-Cluster-Behaviour--69216-se-together-locations-exist-chromium\test-failed-1.png
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
-    Error Context: ..\..\reports\test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\error-context.md
+    Error Context: ..\..\reports\test-results\mapping-Cluster-Behaviour--69216-se-together-locations-exist-chromium\error-context.md
 ]]>
 </failure>
 <system-out>
 <![CDATA[
-[[ATTACHMENT|test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\test-failed-1.png]]
+[[ATTACHMENT|test-results\mapping-Cluster-Behaviour--69216-se-together-locations-exist-chromium\test-failed-1.png]]
 
-[[ATTACHMENT|test-results\locations-Delete-Location--7af57-irmation-keeps-card-in-list-chromium\error-context.md]]
+[[ATTACHMENT|test-results\mapping-Cluster-Behaviour--69216-se-together-locations-exist-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="Search &amp; Filter › search returns matching locations" classname="locations.spec.ts" time="60.208">
-<failure message="locations.spec.ts:188:3 search returns matching locations" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:188:3 › Search & Filter › search returns matching locations ───────
-
-    Test timeout of 60000ms exceeded.
-
-    Error: locator.fill: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('input[name="name"], input[placeholder*="name" i], input[id="name"]').first()
-
-
-       at page-objects\LocationPage.ts:91
-
-      89 |     lng?: string;
-      90 |   }) {
-    > 91 |     await this.nameInput.fill(data.name);
-         |                          ^
-      92 |     if (data.description) await this.descriptionInput.fill(data.description);
-      93 |     if (data.date) await this.dateInput.fill(data.date);
-      94 |     if (data.visitStatus) await this.visitStatusSelect.selectOption(data.visitStatus);
-        at LocationPage.fillLocationForm (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:91:26)
-        at LocationPage.createLocation (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:107:16)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:193:5
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Search-Filter-search-returns-matching-locations-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Search-Filter-search-returns-matching-locations-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Search-Filter-search-returns-matching-locations-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Search-Filter-search-returns-matching-locations-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Search &amp; Filter › search with non-matching query shows empty state or zero cards" classname="locations.spec.ts" time="60.182">
-<failure message="locations.spec.ts:201:3 search with non-matching query shows empty state or zero cards" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:201:3 › Search & Filter › search with non-matching query shows empty state or zero cards 
-
-    Test timeout of 60000ms exceeded.
-
-    Error: locator.fill: Test timeout of 60000ms exceeded.
-    Call log:
-      - waiting for locator('input[placeholder*="search" i], input[type="search"], input[name="search"]').first()
-        - locator resolved to <input type="text" class="grow" placeholder="Search"/>
-        - fill("zzzNOTHINGMATCHESzzzXYZXYZ")
-      - attempting fill action
-        2 × waiting for element to be visible, enabled and editable
-          - element is not visible
-        - retrying fill action
-        - waiting 20ms
-        2 × waiting for element to be visible, enabled and editable
-          - element is not visible
-        - retrying fill action
-          - waiting 100ms
-        112 × waiting for element to be visible, enabled and editable
-            - element is not visible
-          - retrying fill action
-            - waiting 500ms
-
-
-       at page-objects\LocationPage.ts:112
-
-      110 |
-      111 |   async searchLocations(query: string) {
-    > 112 |     await this.searchInput.fill(query);
-          |                            ^
-      113 |     await this.page.waitForLoadState('networkidle');
-      114 |   }
-      115 |
-        at LocationPage.searchLocations (C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\page-objects\LocationPage.ts:112:28)
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:204:14
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Search-Filter-se-8175c-s-empty-state-or-zero-cards-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Visit Status Filter › filter by status &quot;visited&quot; renders without error" classname="locations.spec.ts" time="2.561">
-<properties>
-<property name="skip" value="">
-</property>
-</properties>
+<testcase name="Collection Map Integration › collection detail page loads without JS errors" classname="mapping.spec.ts" time="0.002">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Visit Status Filter › filter by status &quot;planned&quot; renders without error" classname="locations.spec.ts" time="2.56">
-<properties>
-<property name="skip" value="">
-</property>
-</properties>
+<testcase name="Mapping API › GET /api/adventures/ returns 200 via the SvelteKit proxy" classname="mapping.spec.ts" time="0">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="Visit Status Filter › filter by status &quot;featured&quot; renders without error" classname="locations.spec.ts" time="2.569">
-<properties>
-<property name="skip" value="">
-</property>
-</properties>
+<testcase name="Map Accessibility › map page has a visible heading or landmark" classname="mapping.spec.ts" time="0">
 <skipped>
 </skipped>
-</testcase>
-<testcase name="Location API › GET /api/adventures/ returns 200 and array" classname="locations.spec.ts" time="1.836">
-<failure message="locations.spec.ts:250:3 GET /api/adventures/ returns 200 and array" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:250:3 › Location API › GET /api/adventures/ returns 200 and array ─
-
-    Error: page.evaluate: SyntaxError: Unexpected token '<', "
-    <!doctype "... is not valid JSON
-
-      249 |
-      250 |   test('GET /api/adventures/ returns 200 and array', async ({ loggedInPage: page }) => {
-    > 251 |     const result = await page.evaluate(
-          |                               ^
-      252 |       async ({ apiUrl, endpoint }) => {
-      253 |         const res = await fetch(`${apiUrl}${endpoint}`, { credentials: 'include' });
-      254 |         const data = await res.json();
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:251:31
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Location-API-GET-114e1-tures-returns-200-and-array-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Location API › POST /api/adventures/ creates new location" classname="locations.spec.ts" time="1.873">
-<failure message="locations.spec.ts:263:3 POST /api/adventures/ creates new location" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:263:3 › Location API › POST /api/adventures/ creates new location ─
-
-    Error: page.evaluate: SyntaxError: Unexpected token '<', "
-    <!doctype "... is not valid JSON
-
-      262 |
-      263 |   test('POST /api/adventures/ creates new location', async ({ loggedInPage: page }) => {
-    > 264 |     const result = await page.evaluate(
-          |                               ^
-      265 |       async ({ apiUrl, endpoint }) => {
-      266 |         const res = await fetch(`${apiUrl}${endpoint}`, {
-      267 |           method: 'POST',
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:264:31
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Location-API-POS-9fc1f-ntures-creates-new-location-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Location API › PATCH /api/adventures/:id/ updates name" classname="locations.spec.ts" time="1.868">
-<failure message="locations.spec.ts:282:3 PATCH /api/adventures/:id/ updates name" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:282:3 › Location API › PATCH /api/adventures/:id/ updates name ────
-
-    Error: page.evaluate: SyntaxError: Unexpected token '<', "
-    <!doctype "... is not valid JSON
-
-      282 |   test('PATCH /api/adventures/:id/ updates name', async ({ loggedInPage: page }) => {
-      283 |     // Create one to patch
-    > 284 |     const createResult = await page.evaluate(
-          |                                     ^
-      285 |       async ({ apiUrl, endpoint }) => {
-      286 |         const res = await fetch(`${apiUrl}${endpoint}`, {
-      287 |           method: 'POST',
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:284:37
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Location-API-PATCH-api-adventures-id-updates-name-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Location API › DELETE /api/adventures/:id/ returns 204" classname="locations.spec.ts" time="1.851">
-<failure message="locations.spec.ts:316:3 DELETE /api/adventures/:id/ returns 204" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:316:3 › Location API › DELETE /api/adventures/:id/ returns 204 ────
-
-    Error: page.evaluate: SyntaxError: Unexpected token '<', "
-    <!doctype "... is not valid JSON
-
-      316 |   test('DELETE /api/adventures/:id/ returns 204', async ({ loggedInPage: page }) => {
-      317 |     // Create a throwaway location
-    > 318 |     const createResult = await page.evaluate(
-          |                                     ^
-      319 |       async ({ apiUrl, endpoint }) => {
-      320 |         const res = await fetch(`${apiUrl}${endpoint}`, {
-      321 |           method: 'POST',
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:318:37
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Location-API-DELETE-api-adventures-id-returns-204-chromium\error-context.md]]
-]]>
-</system-out>
-</testcase>
-<testcase name="Location Detail Page › navigating to /locations/:id shows location name" classname="locations.spec.ts" time="1.864">
-<failure message="locations.spec.ts:351:3 navigating to /locations/:id shows location name" type="FAILURE">
-<![CDATA[  [chromium] › locations.spec.ts:351:3 › Location Detail Page › navigating to /locations/:id shows location name 
-
-    Error: page.evaluate: SyntaxError: Unexpected token '<', "
-    <!doctype "... is not valid JSON
-
-      351 |   test('navigating to /locations/:id shows location name', async ({ loggedInPage: page }) => {
-      352 |     // Create via API, then navigate to its detail page
-    > 353 |     const createResult = await page.evaluate(
-          |                                     ^
-      354 |       async ({ apiUrl, endpoint }) => {
-      355 |         const name = `Detail Page Test ${Date.now()}`;
-      356 |         const res = await fetch(`${apiUrl}${endpoint}`, {
-        at C:\Users\a.eraly\AdventureLog\frontend\tests\e2e\locations.spec.ts:353:37
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ..\..\reports\test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ..\..\reports\test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\error-context.md
-]]>
-</failure>
-<system-out>
-<![CDATA[
-[[ATTACHMENT|test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\test-failed-1.png]]
-
-[[ATTACHMENT|test-results\locations-Location-Detail--d00ed-ions-id-shows-location-name-chromium\error-context.md]]
-]]>
-</system-out>
 </testcase>
 </testsuite>
 </testsuites>

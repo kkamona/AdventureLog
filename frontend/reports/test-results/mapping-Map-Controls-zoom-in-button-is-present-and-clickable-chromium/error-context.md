@@ -1,0 +1,74 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "AdventureLog AdventureLog" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]:
+        - img "AdventureLog" [ref=e7]
+        - generic [ref=e8]: AdventureLog
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - button "Login" [ref=e11] [cursor=pointer]
+        - button "Signup" [ref=e12] [cursor=pointer]
+      - generic [ref=e13]:
+        - button [ref=e14] [cursor=pointer]:
+          - img [ref=e15]
+        - option "English" [selected]
+        - option "Español"
+        - option "Français"
+        - option "Deutsch"
+        - option "Italiano"
+        - option "中文"
+        - option "Nederlands"
+        - option "Svenska"
+        - option "Polski"
+        - option "한국어"
+        - option "Norsk"
+        - option "Русский"
+        - option "日本語"
+        - option "العربية"
+        - option "Português (Brasil)"
+        - option "Română"
+        - option "Slovenský"
+        - option "Türkçe"
+        - option "Українська"
+        - option "Magyar"
+        - option "Light"
+        - option "Dark"
+        - option "Dim"
+        - option "Night"
+        - option "Forest"
+        - option "Aqua"
+        - option "Aesthetic Light"
+        - option "Aesthetic Dark"
+        - option "Northern Lights"
+  - generic [ref=e18]:
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - heading "AdventureLog" [level=1] [ref=e28]
+          - heading "Login" [level=2] [ref=e30]
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e35]: Username
+            - textbox "Username" [ref=e36]:
+              - /placeholder: Enter your username
+          - generic [ref=e37]:
+            - generic [ref=e39]: Password
+            - textbox "Password" [ref=e40]:
+              - /placeholder: Enter your password
+          - button "Login" [ref=e42] [cursor=pointer]
+          - generic [ref=e43]:
+            - link "Signup" [ref=e44] [cursor=pointer]:
+              - /url: /signup
+            - link "Forgot Password?" [ref=e45] [cursor=pointer]:
+              - /url: /user/reset-password
+      - generic [ref=e48]:
+        - generic [ref=e49]: "\""
+        - blockquote [ref=e50]: I am not the same, having seen the moon shine on the other side of the world.
+        - contentinfo [ref=e51]: — Mary Anne Radmacher
+    - button [ref=e52] [cursor=pointer]:
+      - img [ref=e53]
+```
