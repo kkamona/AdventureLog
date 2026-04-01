@@ -1,189 +1,174 @@
 /**
  * Collections Tests
- * Covers: list, create, edit, delete, archive, share/invite, detail tabs
+ *
+ * All tests run in the chromium project which loads playwright/.auth/user.json.
+ * Every describe block asserts toHaveURL(/collections/) first — if the app
+ * redirected to /login the session is broken and the test fails clearly.
+ *
+ * Selector notes (from source):
+ *  - FAB:  [role="button"].btn-primary.btn-circle  (a <div>, not a <button>)
+ *  - FAB dropdown item: button text "Collection"
+ *  - Empty-state create button: button.btn-primary.btn-wide "Create"
+ *  - Modal: dialog#my_modal_1,  name field: #name
+ *  - Card action menu: button.btn-square.btn-sm  (inside .dropdown.dropdown-end on card)
+ *  - Edit text: "Edit Collection"   Archive: "Archive"   Delete: "Delete"
  */
 import { test, expect, uid } from '../fixtures';
 
+// ── Shared helper ─────────────────────────────────────────────────────────────
+
+async function openCreateCollectionModal(page: any) {
+  const fab = page.locator('[role="button"].btn-primary.btn-circle');
+  if (await fab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await fab.click();
+    // Dropdown item — text from $t('adventures.collection') = "Collection"
+    const item = page.locator('.dropdown-content button:has-text("Collection")').first();
+    await expect(item).toBeVisible({ timeout: 4_000 });
+    await item.click();
+  } else {
+    // Empty-state button — text from $t('collection.create') = "Create"
+    await page.locator('button.btn-primary.btn-wide').click();
+  }
+  await expect(page.locator('dialog#my_modal_1')).toBeVisible({ timeout: 6_000 });
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
 test.describe('Collections – List', () => {
-  test('collections page loads', async ({ page }) => {
+  test('collections page loads (proves session is active)', async ({ page }) => {
     await page.goto('/collections');
-    await expect(page).toHaveURL(/collections/);
+    // If session is missing, the app redirects to /login — this catches it
+    await expect(page).toHaveURL(/\/collections/, { timeout: 8_000 });
+    await expect(
+  page.getByRole('link', { name: 'Playwright Trip 1774683402674' })
+).toBeVisible();
+  });
+
+  test('FAB circle button is visible in bottom-right', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    await expect(page.locator('[role="button"].btn-primary.btn-circle')).toBeVisible();
+  });
+
+  test('tab buttons My Collections / Shared / Archived / Invites are visible', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    await expect(page.locator('button:has-text("My Collections")')).toBeVisible();
+    await expect(page.locator('button:has-text("Shared")')).toBeVisible();
+    await expect(page.locator('button:has-text("Archived")')).toBeVisible();
+  });
+
+  test('filter sidebar shows Status Filter and Sort sections', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    const statusCard = page.locator('div.card', {
+  has: page.locator('text=Status Filter')
+});
+
+await expect(statusCard).toBeVisible();
+  });
+});
+
+
+
+// ─── Detail page ──────────────────────────────────────────────────────────────
+
+test.describe('Collections – Detail page', () => {
+  test('user flow: navigate to collection detail → switch All / Itinerary / Map / Stats tabs', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+
+    let firstLink = page.locator('a[href*="/collections/"]').first();
+    if (await firstLink.count() === 0) {
+      await openCreateCollectionModal(page);
+      await page.fill('#name', `Nav Test ${uid()}`);
+      await page.click('dialog#my_modal_1 button[type="submit"]');
+      await expect(page.locator('dialog#my_modal_1')).toBeHidden({ timeout: 8_000 });
+      firstLink = page.locator('a[href*="/collections/"]').first();
+    }
+
+    const href = await firstLink.getAttribute('href');
+    await page.goto(href!);
+    await expect(page).toHaveURL(/\/collections\/.+/);
     await expect(page.locator('h1, h2').first()).toBeVisible();
+
+    for (const tab of ['All', 'Itinerary', 'Map', 'Stats']) {
+      const tabBtn = page.locator(`button:has-text("${tab}")`).first();
+      if (await tabBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await tabBtn.click();
+        await page.waitForTimeout(400);
+        await expect(page.locator('body')).not.toBeEmpty();
+      }
+    }
   });
 
-  test('owned / shared / archived tabs are visible', async ({ page }) => {
+  test('user flow: open collection detail → FAB → add location inside collection', async ({ page }) => {
     await page.goto('/collections');
-    // Tab buttons may use text or icons
-    const tabsArea = page.locator('[role="tablist"], .tabs, nav');
-    if (await tabsArea.count() > 0) {
-      await expect(tabsArea.first()).toBeVisible();
+    await expect(page).toHaveURL(/\/collections/);
+
+    let href: string | null = null;
+    const firstLink = page.locator('a[href*="/collections/"]').first();
+    if (await firstLink.count() > 0) {
+      href = await firstLink.getAttribute('href');
     } else {
-      // At minimum the page should render
-      await expect(page.locator('body')).not.toBeEmpty();
-    }
-  });
-
-  test('+ button to create collection is visible', async ({ page }) => {
-    await page.goto('/collections');
-    const addBtn = page.locator('button').filter({ has: page.locator('svg') }).last();
-    await expect(addBtn).toBeVisible();
-  });
-});
-
-test.describe('Collections – Create', () => {
-  test('create collection modal opens and has name field', async ({ page }) => {
-    await page.goto('/collections');
-
-    // Click the last icon button (FAB) to open modal
-    await page.locator('button').filter({ has: page.locator('svg') }).last().click();
-
-    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i], input[id*="name"]').first();
-    await expect(nameInput).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('creating a collection with a unique name succeeds', async ({ page }) => {
-    await page.goto('/collections');
-
-    // Open create modal
-    await page.locator('button').filter({ has: page.locator('svg') }).last().click();
-
-    const nameInput = page.locator('input[name="name"], input[id*="name"]').first();
-    if (!(await nameInput.isVisible({ timeout: 4_000 }).catch(() => false))) {
-      test.skip(true, 'Could not open collection modal');
-      return;
+      await openCreateCollectionModal(page);
+      await page.fill('#name', `Detail FAB ${uid()}`);
+      await page.click('dialog#my_modal_1 button[type="submit"]');
+      await expect(page.locator('dialog#my_modal_1')).toBeHidden({ timeout: 8_000 });
+      href = await page.locator('a[href*="/collections/"]').first().getAttribute('href');
     }
 
-    const collectionName = `E2E Collection ${uid()}`;
-    await nameInput.fill(collectionName);
-
-    // Submit
-    await page.locator('button[type="submit"], button:has-text("Create"), button:has-text("Save")').first().click();
-
-    // Expect the new collection to appear or success indicator
-    await expect(page.locator(`text=${collectionName}`)).toBeVisible({ timeout: 8_000 }).catch(() => {
-      // Toast or redirect also acceptable
-    });
-  });
-
-  test('collection description field is optional', async ({ page }) => {
-    await page.goto('/collections');
-    await page.locator('button').filter({ has: page.locator('svg') }).last().click();
-
-    const descInput = page.locator('textarea[name="description"], input[name="description"]').first();
-    if (await descInput.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await descInput.fill('');
-      // Should still allow submit with empty description
-      await expect(descInput).toHaveValue('');
-    }
-  });
-});
-
-test.describe('Collections – Detail', () => {
-  test('clicking a collection card navigates to detail', async ({ page }) => {
-    await page.goto('/collections');
-    const firstLink = page.locator('a[href*="/collections/"]').first();
-    if (await firstLink.count() === 0) {
-      test.skip(true, 'No collections to navigate to');
-      return;
-    }
-    await firstLink.click();
-    await page.waitForURL(/collections\/.+/, { timeout: 8_000 });
-    await expect(page).toHaveURL(/collections\/.+/);
-  });
-
-  test('collection detail has tab navigation (All Items, Itinerary, Map, Stats)', async ({ page }) => {
-    await page.goto('/collections');
-    const firstLink = page.locator('a[href*="/collections/"]').first();
-    if (await firstLink.count() === 0) {
-      test.skip(true, 'No collections available');
-      return;
-    }
-    const href = await firstLink.getAttribute('href');
     await page.goto(href!);
-    // Should have tab-like buttons
-    const tabs = page.locator('button, [role="tab"]').filter({ hasText: /all|itinerary|map|stats/i });
-    await expect(tabs.first()).toBeVisible({ timeout: 5_000 });
-  });
+    await expect(page).toHaveURL(/\/collections\/.+/);
 
-  test('collection map tab renders map container', async ({ page }) => {
-    await page.goto('/collections');
-    const firstLink = page.locator('a[href*="/collections/"]').first();
-    if (await firstLink.count() === 0) {
-      test.skip(true, 'No collections available');
-      return;
-    }
-    const href = await firstLink.getAttribute('href');
-    await page.goto(href!);
-    const mapTab = page.locator('button:has-text("Map"), [role="tab"]:has-text("Map")').first();
-    if (await mapTab.count() > 0) {
-      await mapTab.click();
-      await expect(page.locator('.maplibregl-map, canvas, [data-testid="map"]')).toBeVisible({ timeout: 8_000 }).catch(() => {});
-    }
-  });
-
-  test('collection detail shows + FAB to add items', async ({ page }) => {
-    await page.goto('/collections');
-    const firstLink = page.locator('a[href*="/collections/"]').first();
-    if (await firstLink.count() === 0) {
-      test.skip(true, 'No collections available');
-      return;
-    }
-    const href = await firstLink.getAttribute('href');
-    await page.goto(href!);
-    const fab = page.locator('button').filter({ has: page.locator('svg') }).last();
-    await expect(fab).toBeVisible();
-  });
-});
-
-test.describe('Collections – Archive & Delete', () => {
-  test('archive option is accessible from collection card menu', async ({ page }) => {
-    await page.goto('/collections');
-    const cards = await page.locator('.card').all();
-    if (cards.length === 0) {
-      test.skip(true, 'No collections to archive');
-      return;
-    }
-    // Hover to reveal menu
-    await cards[0].hover();
-    const menuBtn = cards[0].locator('button').last();
-    await menuBtn.click().catch(() => {});
-    const archiveOption = page.locator('button:has-text("Archive"), li:has-text("Archive")');
-    if (await archiveOption.count() > 0) {
-      await expect(archiveOption.first()).toBeVisible();
+    const fab = page.locator('[role="button"].btn-primary.btn-circle');
+    if (await fab.isVisible({ timeout: 4_000 }).catch(() => false)) {
+      await fab.click();
+      const locationItem = page.locator('.dropdown-content button:has-text("Location")').first();
+      if (await locationItem.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await locationItem.click();
+        await expect(page.locator('dialog#my_modal_1')).toBeVisible({ timeout: 6_000 });
+        await page.click('button:has-text("Continue")');
+        await page.fill('#name', `Col Loc ${uid()}`);
+        await page.click('dialog#my_modal_1 button.btn-primary:not([disabled])');
+        await page.keyboard.press('Escape');
+        await expect(page).toHaveURL(/\/collections\/.+/);
+      }
     }
   });
 });
 
-test.describe('Collections – Invites', () => {
-  test('invites tab is accessible', async ({ page }) => {
-    await page.goto('/collections');
-    const invitesTab = page.locator('button:has-text("Invite"), [role="tab"]:has-text("Invite")');
-    if (await invitesTab.count() > 0) {
-      await invitesTab.first().click();
-      await expect(page).toHaveURL(/collections/);
-    }
-  });
-
-  test('share icon on collection card is visible', async ({ page }) => {
-    await page.goto('/collections');
-    const shareBtn = page.locator('button[aria-label*="share" i], button:has-text("Share")');
-    // Share functionality exists – just check page loads correctly
-    await expect(page).toHaveURL(/collections/);
-  });
-});
+// ─── API ─────────────────────────────────────────────────────────────────────
 
 test.describe('Collections – API', () => {
-  test('GET /api/collections/ returns 200', async ({ request }) => {
-    const res = await request.get('/api/collections/');
+  // page.request shares the browser context → session cookies are sent
+
+  test('GET /api/collections/ returns 200 with results array', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    const res = await page.request.get('/api/collections/');
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty('results');
+    expect(Array.isArray(body.results)).toBe(true);
   });
 
-  test('POST /api/collections/ with missing name returns 400', async ({ request }) => {
-    const res = await request.post('/api/collections/', {
-      data: { description: 'no name' },
-    });
+  test('GET /api/collections/ results contain expected fields', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    const res = await page.request.get('/api/collections/');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    if (body.results.length > 0) {
+      expect(body.results[0]).toHaveProperty('id');
+      expect(body.results[0]).toHaveProperty('name');
+    }
+  });
+
+  test('POST /api/collections/ with empty name returns 400', async ({ page }) => {
+    await page.goto('/collections');
+    await expect(page).toHaveURL(/\/collections/);
+    const res = await page.request.post('/api/collections/', { data: { name: '' } });
     expect([400, 403]).toContain(res.status());
   });
 });

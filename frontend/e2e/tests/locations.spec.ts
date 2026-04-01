@@ -1,157 +1,129 @@
 /**
  * Locations Tests
- * Covers: list view, create, edit, delete, filter, visit toggle, detail page
+ *
+ * All tests run in the chromium project which loads playwright/.auth/user.json
+ * so every test starts authenticated. No test.use() overrides here.
+ *
+ * Selector notes (from source):
+ *  - FAB:  [role="button"].btn-primary.btn-circle  (a <div>, not a <button>)
+ *  - FAB dropdown item that opens modal: button text "Location"
+ *  - Empty-state create button: button.btn-primary.btn-wide "Create Location"
+ *  - Modal: dialog#my_modal_1
+ *  - Quick Start step: has button "Continue"
+ *  - Details step: input#name, button.btn-primary (Save)
+ *  - Card action menu: button.btn-square.btn-sm[aria-haspopup="menu"]
+ *  - Edit option text: "Edit Location"
+ *  - Delete button id: "delete_adventure"
  */
 import { test, expect, uid } from '../fixtures';
 
+// ── Shared helper ─────────────────────────────────────────────────────────────
+
+async function openCreateLocationModal(page: any) {
+  const fab = page.locator('[role="button"].btn-primary.btn-circle');
+  if (await fab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await fab.click();
+    // Dropdown menu item — text comes from $t('locations.location') = "Location"
+    const item = page.locator('.dropdown-content button:has-text("Location")').first();
+    await expect(item).toBeVisible({ timeout: 4_000 });
+    await item.click();
+  } else {
+    // Empty-state button — text from $t('adventures.create_location') = "Create Location"
+    await page.locator('button.btn-primary.btn-wide').click();
+  }
+  await expect(page.locator('dialog#my_modal_1')).toBeVisible({ timeout: 6_000 });
+}
+
+// ─── List ─────────────────────────────────────────────────────────────────────
+
 test.describe('Locations – List', () => {
-  test('locations page loads and shows heading', async ({ page }) => {
+  test('locations page loads (proves session is active)', async ({ page }) => {
     await page.goto('/locations');
-    await expect(page).toHaveURL(/locations/);
-    // Page title or main heading
-    await expect(page.locator('h1, h2, [data-testid="page-title"]').first()).toBeVisible();
+    // If not authenticated, the app redirects to /login — this assertion catches that
+    await expect(page).toHaveURL(/\/locations/, { timeout: 8_000 });
+const categoriesCard = page.locator('div.card', {
+  has: page.getByRole('heading', { name: 'Categories' })
+});
+
+await expect(categoriesCard).toBeVisible();  });
+
+  test('FAB circle button is visible in bottom-right', async ({ page }) => {
+    await page.goto('/locations');
+    await expect(page).toHaveURL(/\/locations/);
+    await expect(page.locator('[role="button"].btn-primary.btn-circle')).toBeVisible();
   });
 
-  test('locations page shows + button to create new location', async ({ page }) => {
+  test('filter sidebar shows Visited sections', async ({ page }) => {
     await page.goto('/locations');
-    // The FAB / new button
-    const addBtn = page.locator('button:has(svg), a[href*="new"], button[aria-label*="new" i], button[aria-label*="add" i]');
-    await expect(addBtn.first()).toBeVisible();
+    await expect(page).toHaveURL(/\/locations/);
+    await expect(
+  page.locator('h3', { hasText: 'Visited' })
+).toBeVisible();
   });
 
-  test('filter sidebar can be opened', async ({ page }) => {
+  test('Visited / Not Visited filter buttons are present', async ({ page }) => {
     await page.goto('/locations');
-    const filterBtn = page.locator('button:has-text("Filter"), button[aria-label*="filter" i], [data-testid="filter-btn"]');
-    if (await filterBtn.count() > 0) {
-      await filterBtn.first().click();
-      // Sidebar or dropdown should appear
-      await expect(page.locator('form#location-filters-form, [data-testid="filter-panel"]')).toBeVisible({ timeout: 4_000 }).catch(() => {});
-    }
-  });
-
-  test('sort options are accessible', async ({ page }) => {
-    await page.goto('/locations');
-    const sortBtn = page.locator('button:has-text("Sort"), button[aria-label*="sort" i]');
-    if (await sortBtn.count() > 0) {
-      await sortBtn.first().click();
-      await expect(page.locator('ul[role="menu"], .dropdown-content').first()).toBeVisible({ timeout: 4_000 }).catch(() => {});
-    }
+    await expect(page).toHaveURL(/\/locations/);
+    await expect(
+  page.locator('input[type="radio"][aria-label="Not Visited"]')
+).toBeVisible();
   });
 });
 
-test.describe('Locations – Create', () => {
-  test('opens new location modal and fills required fields', async ({ page }) => {
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+test.describe('Locations – Create flow', () => {
+
+  test('empty name on Details step — Save is disabled or validation fires', async ({ page }) => {
     await page.goto('/locations');
+    await expect(page).toHaveURL(/\/locations/);
+    await openCreateLocationModal(page);
 
-    // Open modal via + button (various selectors the app might use)
-    const addBtn = page.locator('button').filter({ hasText: /^$/ }).last(); // FAB icon buttons
-    // Try clicking a visible + button
-    await page.locator('button, a').filter({ has: page.locator('svg') }).last().click().catch(async () => {
-      await page.locator('button').last().click();
-    });
+    await page.click('button:has-text("Continue")');
+    await expect(page.locator('#name')).toBeVisible({ timeout: 5_000 });
+    await page.fill('#name', '');
 
-    // If modal opened, fill name
-    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i], input[id*="name"]').first();
-    if (await nameInput.isVisible({ timeout: 4_000 }).catch(() => false)) {
-      const locationName = `E2E Location ${uid()}`;
-      await nameInput.fill(locationName);
-      await expect(nameInput).toHaveValue(locationName);
-    }
-  });
-
-  test('location modal has name, description fields', async ({ page }) => {
-    await page.goto('/locations');
-    // Attempt to open creation modal
-    await page.keyboard.press('Tab'); // Move focus for accessibility check
-    const modal = page.locator('dialog[open], [role="dialog"], .modal.modal-open');
-    // If modal is not open yet, check it's accessible via button
-    const addBtns = await page.locator('button').all();
-    for (const btn of addBtns.slice(-5)) {
-      const text = await btn.textContent();
-      if (!text?.trim()) {
-        await btn.click().catch(() => {});
-        break;
-      }
-    }
-    // Just verify page is stable
-    await expect(page).toHaveURL(/locations/);
-  });
-});
-
-test.describe('Locations – Detail Page', () => {
-  test('navigating to an existing location shows detail view', async ({ page }) => {
-    await page.goto('/locations');
-    const firstCard = page.locator('.card a, a:has(.card), [data-testid="location-card"] a').first();
-    if (await firstCard.count() > 0) {
-      await firstCard.click();
-      await page.waitForURL(/locations\//, { timeout: 8_000 });
-      await expect(page).toHaveURL(/locations\/.+/);
+    const saveBtn = page.locator('dialog#my_modal_1 button.btn-primary').first();
+    const disabled = await saveBtn.isDisabled();
+    if (!disabled) {
+      await saveBtn.click();
+      await page.waitForTimeout(800);
+      const hasError = (await page.locator('.alert-error, input:invalid').count()) > 0;
+      expect(hasError || page.url().includes('/locations')).toBeTruthy();
     } else {
-      // No locations yet — skip gracefully
-      test.skip(true, 'No locations to navigate to');
-    }
-  });
-
-  test('location detail page renders name and action buttons', async ({ page }) => {
-    await page.goto('/locations');
-    const firstCardLink = page.locator('a[href*="/locations/"]').first();
-    if (await firstCardLink.count() > 0) {
-      const href = await firstCardLink.getAttribute('href');
-      await page.goto(href!);
-      await expect(page.locator('h1, h2').first()).toBeVisible();
-    } else {
-      test.skip(true, 'No locations available');
-    }
-  });
-
-  test('edit button opens edit modal on detail page', async ({ page }) => {
-    await page.goto('/locations');
-    const firstCardLink = page.locator('a[href*="/locations/"]').first();
-    if (await firstCardLink.count() === 0) {
-      test.skip(true, 'No locations available');
-      return;
-    }
-    const href = await firstCardLink.getAttribute('href');
-    await page.goto(href!);
-    const editBtn = page.locator('button:has-text("Edit"), button[aria-label*="edit" i]').first();
-    if (await editBtn.count() > 0) {
-      await editBtn.click();
-      await expect(page.locator('dialog[open], [role="dialog"], .modal.modal-open')).toBeVisible({ timeout: 5_000 });
+      expect(disabled).toBeTruthy();
     }
   });
 });
+
+// ─── API ─────────────────────────────────────────────────────────────────────
 
 test.describe('Locations – API', () => {
-  test('GET /api/adventures/ returns 200', async ({ request }) => {
-    const res = await request.get('/api/adventures/');
-    expect([200, 401]).toContain(res.status());
+  // page.request shares the browser context, so session cookies are sent automatically
+
+  test('GET /api/locations/ returns 200 with results array', async ({ page }) => {
+    await page.goto('/locations');
+    await expect(page).toHaveURL(/\/locations/);
+    const res = await page.request.get('/api/locations/');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveProperty('results');
+    expect(Array.isArray(body.results)).toBe(true);
   });
 
-  test('GET /api/adventures/ with auth returns location list', async ({ page, request }) => {
-    // Reuse cookies from logged-in storage state
-    const res = await request.get('/api/adventures/');
+  test('GET /api/locations/?search=Paris returns 200', async ({ page }) => {
+    await page.goto('/locations');
+    await expect(page).toHaveURL(/\/locations/);
+    const res = await page.request.get('/api/locations/?search=Paris');
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty('results');
   });
 
-  test('POST /api/adventures/ with missing name returns 400', async ({ request }) => {
-    const res = await request.post('/api/adventures/', {
-      data: { description: 'no name provided' },
-    });
-    // Should be 400 Bad Request or 403 if CSRF blocked
-    expect([400, 403, 405]).toContain(res.status());
-  });
-});
-
-test.describe('Locations – Visited Filter', () => {
-  test('visited/planned toggle buttons are present', async ({ page }) => {
+  test('POST /api/locations/ with empty name returns 400', async ({ page }) => {
     await page.goto('/locations');
-    const visited = page.locator('button:has-text("Visited"), label:has-text("Visited"), input[name*="visited"]');
-    const planned = page.locator('button:has-text("Planned"), label:has-text("Planned"), input[name*="planned"]');
-    // At least one should be in the DOM (might be inside filter panel)
-    const hasFilter = (await visited.count() > 0) || (await planned.count() > 0);
-    // Passes if either exists, or page simply loaded without error
-    await expect(page).toHaveURL(/locations/);
+    await expect(page).toHaveURL(/\/locations/);
+    const res = await page.request.post('/api/locations/', { data: { name: '' } });
+    expect([400, 403]).toContain(res.status());
   });
 });

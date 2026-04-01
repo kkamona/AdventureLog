@@ -14,9 +14,7 @@ test.describe('Map – Page Load', () => {
   test('map canvas or container renders', async ({ page }) => {
     await page.goto('/map');
     // MapLibre renders a <canvas> inside .maplibregl-map
-    await expect(
-      page.locator('.maplibregl-map, canvas, [data-testid="map"]')
-    ).toBeVisible({ timeout: 12_000 });
+       await expect(page.getByTestId('map-container')).toBeVisible();
   });
 
   test('map page title is correct', async ({ page }) => {
@@ -122,8 +120,8 @@ test.describe('Map – Navigation Integration', () => {
 });
 
 test.describe('Map – API', () => {
-  test('GET /api/adventures/?simplified=true returns pin data', async ({ request }) => {
-    const res = await request.get('/api/adventures/?simplified=true');
+  test('GET /api/locations/?simplified=true returns pin data', async ({ request }) => {
+    const res = await request.get('/api/locations/?simplified=true');
     expect([200, 400]).toContain(res.status()); // simplified may not be a valid param
     if (res.status() === 200) {
       const body = await res.json();
@@ -131,8 +129,8 @@ test.describe('Map – API', () => {
     }
   });
 
-  test('GET /api/adventures/ returns adventures with location data', async ({ request }) => {
-    const res = await request.get('/api/adventures/');
+  test('GET /api/locations/ returns adventures with location data', async ({ request }) => {
+    const res = await request.get('/api/locations/');
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body).toHaveProperty('results');
