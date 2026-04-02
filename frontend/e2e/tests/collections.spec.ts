@@ -44,6 +44,15 @@ test.describe('Collections – List', () => {
 ).toBeVisible();
   });
 
+  test('DEBUG: auth state check', async ({ page, context }) => {
+  const cookies = await context.cookies();
+  console.log('=== COOKIES AT TEST START ===');
+  console.log(JSON.stringify(cookies, null, 2));
+
+  await page.goto('/collections');
+  console.log('=== FINAL URL ===', page.url());
+});
+
   test('FAB circle button is visible in bottom-right', async ({ page }) => {
     await page.goto('/collections');
     await expect(page).toHaveURL(/\/collections/);
