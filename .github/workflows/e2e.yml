@@ -1,12 +1,10 @@
 name: E2E Tests
 
-# ─── Quality Gates enforced by this pipeline ──────────────────────────────────
-#   QG-1  e2e-tests      ── ≥ 90 % overall Playwright pass rate   (not hard block)
-#   QG-2  e2e-tests      ── 0 failures in auth.spec.ts             (not hard block)
-#   QG-3  backend-tests  ── pytest --cov-fail-under=70             (not hard block)
-#   QG-4  api-smoke-test ── 3 curl smoke checks                    (not hard block)
-#   QG-5  e2e-tests      ── ≤ 20 min suite duration                (soft warning only)
-# ──────────────────────────────────────────────────────────────────────────────
+#   QG-1  e2e-tests      ── ≥ 90 % overall Playwright pass rate   
+#   QG-2  e2e-tests      ── 0 failures in auth.spec.ts             
+#   QG-3  backend-tests  ── pytest --cov-fail-under=70             
+#   QG-4  api-smoke-test ── 3 curl smoke checks                    
+#   QG-5  e2e-tests      ── ≤ 20 min suite duration                
 
 on:
   push:
@@ -17,9 +15,7 @@ on:
 
 jobs:
 
-  # ───────────────────────────────────────────────────────────────────────────
   # JOB 1 – Backend Unit Tests (pytest)   QG-3: coverage ≥ 70 %
-  # ───────────────────────────────────────────────────────────────────────────
   backend-tests:
     name: "Backend Unit Tests (pytest)"
     runs-on: ubuntu-latest
@@ -28,7 +24,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ─── Stand up the full stack so backend tests have a live DB/server ───
+
       - name: Create .env file
         run: |
           cat > .env << 'EOF'
@@ -63,7 +59,7 @@ jobs:
           echo "Waiting for PostGIS to initialize..."
           for i in {1..40}; do
             if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              echo "Database ready after ${i} attempts (~$((i*5))s)"
               exit 0
             fi
             echo "Attempt ${i}/40: not ready yet, waiting 5s..."
@@ -90,7 +86,7 @@ jobs:
               http://localhost:8016/ 2>/dev/null || echo "000")
             echo "Attempt ${i}/30: HTTP ${STATUS}"
             if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ API is responding (HTTP ${STATUS})"
+              echo "API is responding (HTTP ${STATUS})"
               exit 0
             fi
             sleep 5
@@ -99,7 +95,7 @@ jobs:
           docker compose logs server --tail=150
           exit 1
 
-      # ─── Python / pytest setup ────────────────────────────────────────────
+      # ─── Python / pytest setup ───────────────
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -111,7 +107,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov requests
 
-      # ── QG-3: coverage ≥ 70 % ─────────────────────────────────────────────
+      # ── QG-3: coverage ≥ 70 % ─────────
       - name: Run pytest with coverage (QG-3)
         run: |
           mkdir -p frontend/reports
@@ -120,7 +116,7 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml:frontend/reports/coverage.xml \
             --cov-fail-under=70
-        continue-on-error: true   # QG-3 is not a hard block
+        continue-on-error: true   
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -134,9 +130,7 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # ───────────────────────────────────────────────────────────────────────────
   # JOB 2 – API Smoke Test (Docker + curl)   QG-4: 3 smoke checks
-  # ───────────────────────────────────────────────────────────────────────────
   api-smoke-test:
     name: "API Smoke Test (Docker + curl)"
     runs-on: ubuntu-latest
@@ -185,7 +179,7 @@ jobs:
           echo "Waiting for PostGIS to initialize..."
           for i in {1..40}; do
             if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              echo "Database ready after ${i} attempts (~$((i*5))s)"
               exit 0
             fi
             echo "Attempt ${i}/40: not ready yet, waiting 5s..."
@@ -215,7 +209,7 @@ jobs:
               http://localhost:8016/ 2>/dev/null || echo "000")
             echo "Attempt ${i}/30: HTTP ${STATUS}"
             if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ API is responding (HTTP ${STATUS})"
+              echo "API is responding (HTTP ${STATUS})"
               exit 0
             fi
             sleep 5
@@ -271,7 +265,7 @@ jobs:
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
           echo "HTTP ${STATUS}"
           if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+            echo "PASS — unauthenticated access blocked (HTTP ${STATUS})"
           elif [ "$STATUS" = "200" ]; then
             echo "⚠️  WARNING — returned 200 without auth (check if public listing is intentional)"
           else
@@ -300,10 +294,9 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # ───────────────────────────────────────────────────────────────────────────
+
   # JOB 3 – Playwright E2E   QG-1: ≥ 90% pass rate  QG-2: 0 auth failures
   #                          QG-5: ≤ 20 min duration (soft warning)
-  # ───────────────────────────────────────────────────────────────────────────
   e2e:
     name: "Playwright E2E"
     runs-on: ubuntu-latest
@@ -318,7 +311,7 @@ jobs:
       - name: Record suite start time (QG-5)
         run: echo "SUITE_START=$(date +%s)" >> $GITHUB_ENV
 
-      # ─── Start the full stack via docker-compose ──────────────────────────
+  
       - name: Start AdventureLog stack
         run: |
           cp .env.example .env 2>/dev/null || cp _env .env
@@ -345,7 +338,7 @@ jobs:
             echo "Waiting... ($i)"; sleep 5
           done
 
-      # ─── Node & Playwright setup ──────────────────────────────────────────
+      # ─── Node & Playwright setup ───────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -361,10 +354,10 @@ jobs:
         working-directory: frontend/e2e
         run: npx playwright install --with-deps chromium
 
-      # ─── Run tests ────────────────────────────────────────────────────────
+      # ─── Run tests ────────────────
       - name: Run E2E tests
         working-directory: frontend/e2e
-        run: npx playwright test --reporter=json,html
+        run: npx playwright test
         continue-on-error: true   # QG-1 / QG-2 are not hard blocks; evaluated below
         env:
           BASE_URL: http://localhost:8015
@@ -373,7 +366,7 @@ jobs:
           TEST_EMAIL: ${{ secrets.TEST_EMAIL || 'admin@example.com' }}
           PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
 
-      # ── QG-1: overall pass rate ≥ 90 % ────────────────────────────────────
+      # ── QG-1: overall pass rate ≥ 90 % ────────────
       - name: "QG-1: Check overall pass rate ≥ 90 % (not hard block)"
         if: always()
         run: |
@@ -391,7 +384,7 @@ jobs:
           RATE=$(python3 -c "print(round($PASSED/$TOTAL*100,1))")
           echo "Pass rate: ${PASSED}/${TOTAL} = ${RATE}%"
           if python3 -c "import sys; sys.exit(0 if $PASSED/$TOTAL >= 0.90 else 1)"; then
-            echo "✅ QG-1 PASS — ${RATE}% ≥ 90%"
+            echo "QG-1 PASS — ${RATE}% ≥ 90%"
           else
             echo "❌ QG-1 FAIL — ${RATE}% < 90% (not a hard block)"
           fi
@@ -424,14 +417,14 @@ jobs:
           COUNT=$(echo "$AUTH_FAILURES" | head -1)
           echo "auth.spec.ts failures: ${COUNT}"
           if [ "${COUNT}" = "0" ]; then
-            echo "✅ QG-2 PASS — 0 auth failures"
+            echo "QG-2 PASS — 0 auth failures"
           else
             echo "❌ QG-2 FAIL — ${COUNT} auth failure(s) detected (not a hard block)"
             echo "$AUTH_FAILURES" | tail -n +2
           fi
         continue-on-error: true
 
-      # ── QG-5: suite duration ≤ 20 min (soft warning) ──────────────────────
+      # ── QG-5: suite duration ≤ 20 min 
       - name: "QG-5: Check suite duration ≤ 20 min (soft warning)"
         if: always()
         run: |
@@ -441,13 +434,13 @@ jobs:
           SECONDS=$(( ELAPSED % 60 ))
           echo "Suite duration: ${MINUTES}m ${SECONDS}s (${ELAPSED}s total)"
           if [ "$ELAPSED" -le 1200 ]; then
-            echo "✅ QG-5 PASS — duration ${MINUTES}m ${SECONDS}s ≤ 20 min"
+            echo "QG-5 PASS — duration ${MINUTES}m ${SECONDS}s ≤ 20 min"
           else
             echo "⚠️  QG-5 WARNING — duration ${MINUTES}m ${SECONDS}s > 20 min (soft warning, not a block)"
           fi
         continue-on-error: true
 
-      # ─── Artifacts ────────────────────────────────────────────────────────
+      # ─── Artifacts ────────────
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
