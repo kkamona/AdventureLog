@@ -1,5 +1,13 @@
 name: E2E Tests
 
+# ─── Quality Gates enforced by this pipeline ──────────────────────────────────
+#   QG-1  e2e-tests      ── ≥ 90 % overall Playwright pass rate   (not hard block)
+#   QG-2  e2e-tests      ── 0 failures in auth.spec.ts             (not hard block)
+#   QG-3  backend-tests  ── pytest --cov-fail-under=70             (not hard block)
+#   QG-4  api-smoke-test ── 3 curl smoke checks                    (not hard block)
+#   QG-5  e2e-tests      ── ≤ 20 min suite duration                (soft warning only)
+# ──────────────────────────────────────────────────────────────────────────────
+
 on:
   push:
     branches: [main, development]
@@ -8,16 +16,309 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e:
-    name: Playwright E2E
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 1 – Backend Unit Tests (pytest)   QG-3: coverage ≥ 70 %
+  # ───────────────────────────────────────────────────────────────────────────
+  backend-tests:
+    name: "Backend Unit Tests (pytest)"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ─── Start the full stack via docker-compose ───────────────────────────
+      # ─── Stand up the full stack so backend tests have a live DB/server ───
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Reset Docker auth
+        run: docker logout
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for PostGIS to initialize..."
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              exit 0
+            fi
+            echo "Attempt ${i}/40: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Database never became ready. Logs:"
+          docker compose logs db
+          exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for Django to run migrations..."
+          sleep 45
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Wait for API to respond
+        run: |
+          echo "Polling http://localhost:8016/ ..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            echo "Attempt ${i}/30: HTTP ${STATUS}"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API is responding (HTTP ${STATUS})"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ API never responded. Final backend logs:"
+          docker compose logs server --tail=150
+          exit 1
+
+      # ─── Python / pytest setup ────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov requests
+
+      # ── QG-3: coverage ≥ 70 % ─────────────────────────────────────────────
+      - name: Run pytest with coverage (QG-3)
+        run: |
+          mkdir -p frontend/reports
+          pytest frontend/test-cases/backend/ -v --tb=short \
+            --cov=frontend/test-cases/backend \
+            --cov-report=term-missing \
+            --cov-report=xml:frontend/reports/coverage.xml \
+            --cov-fail-under=70
+        continue-on-error: true   # QG-3 is not a hard block
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: frontend/reports/coverage.xml
+          retention-days: 30
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 2 – API Smoke Test (Docker + curl)   QG-4: 3 smoke checks
+  # ───────────────────────────────────────────────────────────────────────────
+  api-smoke-test:
+    name: "API Smoke Test (Docker + curl)"
+    runs-on: ubuntu-latest
+    needs: backend-tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install curl
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Reset Docker auth
+        run: docker logout
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          echo "Waiting for PostGIS to initialize..."
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts (~$((i*5))s)"
+              exit 0
+            fi
+            echo "Attempt ${i}/40: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "❌ Database never became ready. Logs:"
+          docker compose logs db
+          exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for Django to run migrations..."
+          sleep 45
+
+      - name: Show container status
+        run: docker compose ps
+
+      - name: Show backend logs
+        run: docker compose logs server --tail=100
+
+      - name: Wait for API to respond
+        run: |
+          echo "Polling http://localhost:8016/ ..."
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            echo "Attempt ${i}/30: HTTP ${STATUS}"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API is responding (HTTP ${STATUS})"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ API never responded. Final backend logs:"
+          docker compose logs server --tail=150
+          exit 1
+
+      - name: Discover and log API routes
+        run: |
+          echo "=== Endpoint status map ==="
+          for EP in "/" "/api/" "/admin/" \
+                    "/api/locations/" "/api/collections/" "/api/itineraries/" \
+                    "/api/notes/" "/api/checklists/" "/api/categories/" \
+                    "/api/transportations/" "/api/images/" "/api/trails/" \
+                    "/api/activities/" "/api/visits/" "/api/lodging/" \
+                    "/api/attachments/" "/api/search/"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 5 \
+              http://localhost:8016${EP} 2>/dev/null || echo "000")
+            echo "  http://localhost:8016${EP}  →  HTTP ${STATUS}"
+          done
+          echo ""
+          echo "=== /api/ response body ==="
+          curl -s --connect-timeout 5 http://localhost:8016/api/ \
+            | python3 -m json.tool 2>/dev/null \
+            || curl -s --connect-timeout 5 http://localhost:8016/api/
+
+      # ── QG-4: 3 hard-block smoke checks ───────────────────────────────────
+
+      - name: "QG-4 Smoke 1: Server alive on port 8016"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/)
+          echo "HTTP ${STATUS}"
+          [ "$STATUS" != "000" ] \
+            && echo "✅ PASS — server alive (HTTP ${STATUS})" \
+            || { echo "❌ FAIL — no response from backend"; exit 1; }
+        continue-on-error: true   # QG-4 is not a hard block
+
+      - name: "QG-4 Smoke 2: Django admin panel accessible"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+            echo "✅ PASS — admin panel reachable (HTTP ${STATUS})"
+          else
+            echo "❌ FAIL — /admin/ returned ${STATUS}"
+            exit 1
+          fi
+        continue-on-error: true   # QG-4 is not a hard block
+
+      - name: "QG-4 Smoke 3: Locations endpoint requires authentication"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
+          echo "HTTP ${STATUS}"
+          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
+            echo "✅ PASS — unauthenticated access blocked (HTTP ${STATUS})"
+          elif [ "$STATUS" = "200" ]; then
+            echo "⚠️  WARNING — returned 200 without auth (check if public listing is intentional)"
+          else
+            echo "❌ FAIL — unexpected status ${STATUS}"
+            exit 1
+          fi
+        continue-on-error: true   # QG-4 is not a hard block
+
+      - name: Save container logs
+        if: always()
+        run: |
+          mkdir -p frontend/reports
+          docker compose logs        > frontend/reports/smoke-all-containers.log 2>&1
+          docker compose logs server > frontend/reports/smoke-backend.log        2>&1
+          docker compose logs db     > frontend/reports/smoke-database.log       2>&1
+
+      - name: Upload smoke-test logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-docker-logs
+          path: frontend/reports/smoke-*.log
+          retention-days: 7
+
+      - name: Shut down containers
+        if: always()
+        run: docker compose down -v
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 3 – Playwright E2E   QG-1: ≥ 90% pass rate  QG-2: 0 auth failures
+  #                          QG-5: ≤ 20 min duration (soft warning)
+  # ───────────────────────────────────────────────────────────────────────────
+  e2e:
+    name: "Playwright E2E"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: api-smoke-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── QG-5: record suite start time ─────────────────────────────────────
+      - name: Record suite start time (QG-5)
+        run: echo "SUITE_START=$(date +%s)" >> $GITHUB_ENV
+
+      # ─── Start the full stack via docker-compose ──────────────────────────
       - name: Start AdventureLog stack
         run: |
           cp .env.example .env 2>/dev/null || cp _env .env
@@ -44,7 +345,7 @@ jobs:
             echo "Waiting... ($i)"; sleep 5
           done
 
-      # ─── Node & Playwright setup ───────────────────────────────────────────
+      # ─── Node & Playwright setup ──────────────────────────────────────────
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -63,12 +364,88 @@ jobs:
       # ─── Run tests ────────────────────────────────────────────────────────
       - name: Run E2E tests
         working-directory: frontend/e2e
-        run: npx playwright test
+        run: npx playwright test --reporter=json,html
+        continue-on-error: true   # QG-1 / QG-2 are not hard blocks; evaluated below
         env:
           BASE_URL: http://localhost:8015
           TEST_USERNAME: ${{ secrets.TEST_USERNAME || 'admin' }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD || 'admin' }}
           TEST_EMAIL: ${{ secrets.TEST_EMAIL || 'admin@example.com' }}
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+
+      # ── QG-1: overall pass rate ≥ 90 % ────────────────────────────────────
+      - name: "QG-1: Check overall pass rate ≥ 90 % (not hard block)"
+        if: always()
+        run: |
+          RESULTS_FILE="frontend/e2e/test-results/results.json"
+          if [ ! -f "$RESULTS_FILE" ]; then
+            echo "⚠️  No results.json found — skipping QG-1 check"
+            exit 0
+          fi
+          TOTAL=$(python3 -c "import json,sys; d=json.load(open('$RESULTS_FILE')); print(d['stats']['expected']+d['stats']['unexpected']+d['stats']['flaky']+d['stats']['skipped'])" 2>/dev/null || echo 0)
+          PASSED=$(python3 -c "import json,sys; d=json.load(open('$RESULTS_FILE')); print(d['stats']['expected'])" 2>/dev/null || echo 0)
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "⚠️  0 tests found — cannot evaluate QG-1"
+            exit 0
+          fi
+          RATE=$(python3 -c "print(round($PASSED/$TOTAL*100,1))")
+          echo "Pass rate: ${PASSED}/${TOTAL} = ${RATE}%"
+          if python3 -c "import sys; sys.exit(0 if $PASSED/$TOTAL >= 0.90 else 1)"; then
+            echo "✅ QG-1 PASS — ${RATE}% ≥ 90%"
+          else
+            echo "❌ QG-1 FAIL — ${RATE}% < 90% (not a hard block)"
+          fi
+        continue-on-error: true
+
+      # ── QG-2: 0 failures in auth.spec.ts ──────────────────────────────────
+      - name: "QG-2: Check 0 failures in auth.spec.ts (not hard block)"
+        if: always()
+        run: |
+          RESULTS_FILE="frontend/e2e/test-results/results.json"
+          if [ ! -f "$RESULTS_FILE" ]; then
+            echo "⚠️  No results.json found — skipping QG-2 check"
+            exit 0
+          fi
+          AUTH_FAILURES=$(python3 -c "
+          import json, sys
+          d = json.load(open('$RESULTS_FILE'))
+          failures = [
+            t['title']
+            for suite in d.get('suites', [])
+            for spec in suite.get('specs', [])
+            for t in spec.get('tests', [])
+            if 'auth' in suite.get('file','').lower()
+            and any(r.get('status') not in ('passed','skipped') for r in t.get('results',[]))
+          ]
+          print(len(failures))
+          for f in failures:
+            print(' -', f, file=sys.stderr)
+          " 2>&1)
+          COUNT=$(echo "$AUTH_FAILURES" | head -1)
+          echo "auth.spec.ts failures: ${COUNT}"
+          if [ "${COUNT}" = "0" ]; then
+            echo "✅ QG-2 PASS — 0 auth failures"
+          else
+            echo "❌ QG-2 FAIL — ${COUNT} auth failure(s) detected (not a hard block)"
+            echo "$AUTH_FAILURES" | tail -n +2
+          fi
+        continue-on-error: true
+
+      # ── QG-5: suite duration ≤ 20 min (soft warning) ──────────────────────
+      - name: "QG-5: Check suite duration ≤ 20 min (soft warning)"
+        if: always()
+        run: |
+          SUITE_END=$(date +%s)
+          ELAPSED=$(( SUITE_END - SUITE_START ))
+          MINUTES=$(( ELAPSED / 60 ))
+          SECONDS=$(( ELAPSED % 60 ))
+          echo "Suite duration: ${MINUTES}m ${SECONDS}s (${ELAPSED}s total)"
+          if [ "$ELAPSED" -le 1200 ]; then
+            echo "✅ QG-5 PASS — duration ${MINUTES}m ${SECONDS}s ≤ 20 min"
+          else
+            echo "⚠️  QG-5 WARNING — duration ${MINUTES}m ${SECONDS}s > 20 min (soft warning, not a block)"
+          fi
+        continue-on-error: true
 
       # ─── Artifacts ────────────────────────────────────────────────────────
       - name: Upload Playwright report

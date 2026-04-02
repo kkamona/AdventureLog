@@ -1,20 +1,4 @@
-/**
- * Locations Tests
- *
- * All tests run in the chromium project which loads playwright/.auth/user.json
- * so every test starts authenticated. No test.use() overrides here.
- *
- * Selector notes (from source):
- *  - FAB:  [role="button"].btn-primary.btn-circle  (a <div>, not a <button>)
- *  - FAB dropdown item that opens modal: button text "Location"
- *  - Empty-state create button: button.btn-primary.btn-wide "Create Location"
- *  - Modal: dialog#my_modal_1
- *  - Quick Start step: has button "Continue"
- *  - Details step: input#name, button.btn-primary (Save)
- *  - Card action menu: button.btn-square.btn-sm[aria-haspopup="menu"]
- *  - Edit option text: "Edit Location"
- *  - Delete button id: "delete_adventure"
- */
+
 import { test, expect, uid } from '../fixtures';
 
 // ── Shared helper ─────────────────────────────────────────────────────────────

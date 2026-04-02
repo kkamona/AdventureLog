@@ -1,18 +1,4 @@
-/**
- * Collections Tests
- *
- * All tests run in the chromium project which loads playwright/.auth/user.json.
- * Every describe block asserts toHaveURL(/collections/) first — if the app
- * redirected to /login the session is broken and the test fails clearly.
- *
- * Selector notes (from source):
- *  - FAB:  [role="button"].btn-primary.btn-circle  (a <div>, not a <button>)
- *  - FAB dropdown item: button text "Collection"
- *  - Empty-state create button: button.btn-primary.btn-wide "Create"
- *  - Modal: dialog#my_modal_1,  name field: #name
- *  - Card action menu: button.btn-square.btn-sm  (inside .dropdown.dropdown-end on card)
- *  - Edit text: "Edit Collection"   Archive: "Archive"   Delete: "Delete"
- */
+
 import { test, expect, uid } from '../fixtures';
 
 // ── Shared helper ─────────────────────────────────────────────────────────────

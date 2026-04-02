@@ -1,13 +1,4 @@
-/**
- * Authentication & User Management Tests
- *
- * IMPORTANT — storageState override pattern:
- *   Describe blocks that test unauthenticated flows (Login, Registration, Password Reset)
- *   must call  test.use({ storageState: { cookies: [], origins: [] } })
- *   to clear the project-level session for those tests only.
- *
- *   All other describe blocks (Logout, Settings) run WITH the project session.
- */
+
 import { test, expect, uid } from '../fixtures';
 
 const VALID_USER = {
