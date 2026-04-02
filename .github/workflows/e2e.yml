@@ -357,7 +357,7 @@ jobs:
       # ─── Run tests ────────────────
       - name: Run E2E tests
         working-directory: frontend/e2e
-        run: npx playwright test
+        run: npx playwright test --reporter=json,html
         continue-on-error: true   # QG-1 / QG-2 are not hard blocks; evaluated below
         env:
           BASE_URL: http://localhost:8015
