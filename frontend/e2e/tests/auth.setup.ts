@@ -9,8 +9,6 @@ import fs from 'fs';
 import path from 'path';
 import { AUTH_FILE } from '../playwright.config';
 
-import fs from 'fs';
-
 
 
 setup('authenticate as admin', async ({ page }) => {
