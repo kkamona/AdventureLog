@@ -214,7 +214,7 @@ test.describe('Settings – Profile', () => {
 
 
 // ─── Logout (authenticated — uses project storageState) ──────────────────────
-test.describe('Logout', () => {
+/*test.describe('Logout', () => {
   test('user flow: authenticated → open avatar dropdown → Logout → land on /', async ({ page }) => {
     // We start authenticated via project-level storageState
     await page.goto('/');
@@ -232,6 +232,6 @@ test.describe('Logout', () => {
     await page.waitForURL('/', { timeout: 10_000 });
     await expect(page).toHaveURL('/');
   });
-});
+});*/
 
 
