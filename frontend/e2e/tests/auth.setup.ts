@@ -9,6 +9,10 @@ import fs from 'fs';
 import path from 'path';
 import { AUTH_FILE } from '../playwright.config';
 
+import fs from 'fs';
+
+
+
 setup('authenticate as admin', async ({ page }) => {
   // Guarantee the directory exists regardless of CWD
   fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
@@ -38,4 +42,7 @@ setup('authenticate as admin', async ({ page }) => {
   await page.context().storageState({ path: AUTH_FILE });
 
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
+  const raw = fs.readFileSync(AUTH_FILE, 'utf-8');
+  console.log('=== STORAGE STATE FILE ===');
+  console.log(raw);
 });
