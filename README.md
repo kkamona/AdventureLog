@@ -190,3 +190,117 @@ Your support helps fund:
 - 🌍 Continued open-source development
 
 [Become a Sponsor](https://seanmorley.com/sponsor) to help keep AdventureLog thriving!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# QA Pipeline Execution Guide (GitHub Actions)
+
+## 1. Overview
+
+This document describes how to run the Quality Assurance (QA) pipeline for the project using GitHub Actions. The pipeline is defined in:
+
+```
+.github/workflows/QA_pipeline.yml
+```
+
+It is responsible for executing automated backend and/or frontend tests, validating system stability, and enforcing quality gates.
+
+---
+
+## 2. Automatic Pipeline Execution (Continuous Integration)
+
+The QA pipeline runs automatically as part of the Continuous Integration (CI) process.
+
+### Trigger Conditions
+
+The workflow is automatically triggered on:
+
+* Every push to the repository
+* Pull request creation and updates (if configured in the workflow file)
+
+### Execution Process
+
+When triggered, GitHub Actions performs the following steps:
+
+1. Checks out the repository source code
+2. Sets up the required runtime environment (e.g., Python version)
+3. Installs project dependencies
+4. Applies required environment configuration
+5. Executes backend test suite (Django tests via `manage.py test`)
+6. Runs additional QA checks (e.g., coverage, API tests, or integration tests depending on configuration)
+7. Collects and reports test results
+
+### Viewing Results
+
+Pipeline execution results can be viewed in the GitHub interface:
+
+* Navigate to the repository
+* Open the **Actions** tab
+* Select the latest workflow run
+* Inspect logs for each step
+
+---
+
+## 3. Manual Pipeline Execution (GitHub UI)
+
+The QA pipeline can also be executed manually when needed.
+
+### Steps to Run Manually
+
+1. Open the GitHub repository
+2. Navigate to the **Actions** tab
+3. Select the workflow named **QA_pipeline**
+4. Click the **Run workflow** button (top right corner)
+5. Select the target branch (e.g., `main`)
+6. Confirm by clicking **Run workflow**
+
+The pipeline will start immediately and its progress will be visible in real time.
+
+---
+
+## 4. Local Test Execution (Development Mode)
+
+Developers may also run tests locally before pushing changes to the repository.
+
+### Command
+
+```bash
+python manage.py test adventures.test_unit_map --verbosity=2
+```
+
+### Notes
+
+If execution fails with errors related to GDAL or Django GIS (for example: *Could not find the GDAL library*), this indicates missing system-level dependencies required by Django’s GIS module.
+
+In the CI environment, these dependencies are typically resolved automatically through the configured GitHub Actions runner or workflow setup.
+
+---
+
+## 5. Pipeline Summary
+
+| Execution Mode  | Trigger             | Purpose                               |
+| --------------- | ------------------- | ------------------------------------- |
+| Automatic CI    | Push / Pull Request | Continuous validation of code changes |
+| Manual Run      | GitHub Actions UI   | On-demand execution and debugging     |
+| Local Execution | Developer machine   | Pre-commit testing and debugging      |
+
+---
+
+## 6. Conclusion
+
+The QA pipeline ensures continuous validation of system quality through automated testing and quality gates. GitHub Actions provides both automated execution on code changes and manual execution for debugging and verification purposes.
+
