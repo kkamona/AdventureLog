@@ -1,4 +1,4 @@
-name: E2E Tests
+name: QA Pipeline
 
 #   QG-1  e2e-tests      ── ≥ 90 % overall Playwright pass rate   
 #   QG-2  e2e-tests      ── 0 failures in auth.spec.ts             
