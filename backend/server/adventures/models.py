@@ -703,8 +703,7 @@ class CollectionItineraryDay(models.Model):
         verbose_name_plural = "Collection Itinerary Days"
     
     def __str__(self):
-        return f"{
-            self.collection.name} - {self.date} - {self.name or 'Unnamed Day'}"
+        return f"{self.collection.name} - {self.date} - {self.name or 'Unnamed Day'}"
 
 
 class CollectionItineraryItem(models.Model):
