@@ -414,7 +414,6 @@ jobs:
               ${CONTAINER}:/code/adventures/${f}.py
             echo "✅ Copied ${f}.py"
           done
-          docker compose exec -T server ls /code/adventures/test_unit_*.py
 
       # QG-6: hard block — runs all 20 unit tests inside the container
       # The container has GDAL, GEOS, PostGIS — no library errors
