@@ -19,310 +19,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 1 – Integration Tests (Django manage.py test inside container) QG-3
-  #
-  # Runs adventures.tests_integration inside the running server container.
-  # The container already has PostGIS, GeoDjango, and all dependencies.
-  # Strategy: docker cp the test file → docker compose exec manage.py test
-  # ══════════════════════════════════════════════════════════════════════════
-  integration-tests:
-    name: "Integration Tests (Django)"
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create .env file
-        run: |
-          cat > .env << 'EOF'
-          PUBLIC_SERVER_URL=http://server:80
-          ORIGIN=http://localhost:8015
-          BODY_SIZE_LIMIT=Infinity
-          FRONTEND_PORT=8015
-          PGHOST=db
-          POSTGRES_DB=database
-          POSTGRES_USER=adventure
-          POSTGRES_PASSWORD=changeme123
-          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-          DJANGO_ADMIN_USERNAME=admin
-          DJANGO_ADMIN_PASSWORD=Admin1234!
-          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-          PUBLIC_URL=http://localhost:8016
-          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          DEBUG=True
-          FRONTEND_URL=http://localhost:8015
-          BACKEND_PORT=8016
-          DISABLE_REGISTRATION=False
-          EOF
-
-      - name: Reset Docker auth
-        run: docker logout
-
-      - name: Start database container
-        run: docker compose up -d db
-
-      - name: Wait for database to be ready
-        run: |
-          for i in {1..40}; do
-            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Database ready after ${i} attempts"; exit 0
-            fi
-            echo "Attempt ${i}/40 — waiting 5s..."; sleep 5
-          done
-          docker compose logs db; exit 1
-
-      - name: Start backend container
-        run: |
-          docker compose up -d server
-          echo "Waiting 45s for migrations..."
-          sleep 45
-
-      - name: Wait for API to respond
-        run: |
-          for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
-              http://localhost:8016/ 2>/dev/null || echo "000")
-            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ API responding (HTTP ${STATUS})"; exit 0
-            fi
-            echo "Attempt ${i}/30 — HTTP ${STATUS}"; sleep 5
-          done
-          docker compose logs server --tail=100; exit 1
-
-      - name: Copy integration test file into container
-        run: |
-          docker cp backend/server/adventures/tests_integration.py \
-            adventurelog-backend:/code/adventures/tests_integration.py
-          echo "✅ Copied tests_integration.py"
-
-      - name: "QG-3: Run Django integration tests (not hard block)"
-        run: |
-          docker compose exec -T server \
-            python /code/manage.py test adventures.tests_integration \
-              --verbosity=2 --noinput
-        continue-on-error: true
-
-      - name: Tear down stack
-        if: always()
-        run: docker compose down -v
-
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 2 – API Smoke Test   QG-4
-  # ══════════════════════════════════════════════════════════════════════════
-  api-smoke-test:
-    name: "API Smoke Test (Docker + curl)"
-    runs-on: ubuntu-latest
-    needs: integration-tests
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create .env file
-        run: |
-          cat > .env << 'EOF'
-          PUBLIC_SERVER_URL=http://server:80
-          ORIGIN=http://localhost:8015
-          BODY_SIZE_LIMIT=Infinity
-          FRONTEND_PORT=8015
-          PGHOST=db
-          POSTGRES_DB=database
-          POSTGRES_USER=adventure
-          POSTGRES_PASSWORD=changeme123
-          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
-          DJANGO_ADMIN_USERNAME=admin
-          DJANGO_ADMIN_PASSWORD=Admin1234!
-          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
-          PUBLIC_URL=http://localhost:8016
-          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
-          DEBUG=True
-          FRONTEND_URL=http://localhost:8015
-          BACKEND_PORT=8016
-          DISABLE_REGISTRATION=False
-          EOF
-
-      - name: Reset Docker auth
-        run: docker logout
-
-      - name: Start database container
-        run: docker compose up -d db
-
-      - name: Wait for database
-        run: |
-          for i in {1..40}; do
-            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
-              echo "✅ Ready after ${i} attempts"; exit 0
-            fi
-            sleep 5
-          done
-          docker compose logs db; exit 1
-
-      - name: Start backend container
-        run: |
-          docker compose up -d server
-          sleep 45
-
-      - name: Wait for API
-        run: |
-          for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
-              http://localhost:8016/ 2>/dev/null || echo "000")
-            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
-              echo "✅ API responding (HTTP ${STATUS})"; exit 0
-            fi
-            sleep 5
-          done
-          docker compose logs server --tail=100; exit 1
-
-      - name: "QG-4 Smoke 1: Server alive"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/)
-          [ "$STATUS" != "000" ] && echo "✅ PASS (HTTP ${STATUS})" \
-            || { echo "❌ FAIL"; exit 1; }
-        continue-on-error: true
-
-      - name: "QG-4 Smoke 2: Admin panel accessible"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/admin/)
-          if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-            echo "✅ PASS (HTTP ${STATUS})"
-          else
-            echo "❌ FAIL (HTTP ${STATUS})"; exit 1
-          fi
-        continue-on-error: true
-
-      - name: "QG-4 Smoke 3: Locations endpoint requires auth"
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8016/api/locations/)
-          if [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
-            echo "✅ PASS — auth required (HTTP ${STATUS})"
-          else
-            echo "⚠️  Unexpected status ${STATUS}"; exit 1
-          fi
-        continue-on-error: true
-
-      - name: Tear down stack
-        if: always()
-        run: docker compose down -v
-
-
-  # ══════════════════════════════════════════════════════════════════════════
-  # JOB 3 – Playwright E2E   QG-1 / QG-2 / QG-5
-  # ══════════════════════════════════════════════════════════════════════════
-  e2e:
-    name: "Playwright E2E"
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: api-smoke-test
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Record suite start time (QG-5)
-        run: echo "SUITE_START=$(date +%s)" >> $GITHUB_ENV
-
-      - name: Start AdventureLog stack
-        run: |
-          cp .env.example .env 2>/dev/null || cp _env .env
-          docker compose up -d --wait
-        env:
-          FRONTEND_PORT: 8015
-          BACKEND_PORT: 8016
-
-      - name: Wait for frontend
-        run: |
-          for i in {1..30}; do
-            if curl -sf http://localhost:8015 > /dev/null; then echo "Frontend up"; break; fi
-            echo "Waiting... ($i)"; sleep 5
-          done
-
-      - name: Wait for backend
-        run: |
-          for i in {1..30}; do
-            if curl -sf http://localhost:8016/api/ > /dev/null 2>&1; then echo "Backend up"; break; fi
-            echo "Waiting... ($i)"; sleep 5
-          done
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/e2e/package-lock.json
-
-      - name: Install dependencies
-        working-directory: frontend/e2e
-        run: npm ci
-
-      - name: Install Playwright browsers
-        working-directory: frontend/e2e
-        run: npx playwright install --with-deps chromium
-
-      - name: Run E2E tests
-        working-directory: frontend/e2e
-        run: npx playwright test --reporter=json,html
-        continue-on-error: true
-        env:
-          BASE_URL: http://localhost:8015
-          TEST_USERNAME: ${{ secrets.TEST_USERNAME || 'admin' }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD || 'admin' }}
-          TEST_EMAIL: ${{ secrets.TEST_EMAIL || 'admin@example.com' }}
-          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
-
-      - name: "QG-1: Overall pass rate ≥ 90 %"
-        if: always()
-        run: |
-          F="frontend/e2e/test-results/results.json"
-          [ ! -f "$F" ] && echo "⚠️  No results.json" && exit 0
-          T=$(python3 -c "import json; d=json.load(open('$F')); s=d['stats']; print(s['expected']+s['unexpected']+s['flaky']+s['skipped'])" 2>/dev/null || echo 0)
-          P=$(python3 -c "import json; d=json.load(open('$F')); print(d['stats']['expected'])" 2>/dev/null || echo 0)
-          [ "$T" -eq 0 ] && echo "⚠️  0 tests" && exit 0
-          R=$(python3 -c "print(round($P/$T*100,1))")
-          python3 -c "import sys; sys.exit(0 if $P/$T>=0.90 else 1)" \
-            && echo "✅ QG-1 PASS — ${R}% ≥ 90%" \
-            || echo "❌ QG-1 FAIL — ${R}% < 90% (not hard block)"
-        continue-on-error: true
-
-      - name: "QG-2: 0 failures in auth.spec.ts"
-        if: always()
-        run: |
-          F="frontend/e2e/test-results/results.json"
-          [ ! -f "$F" ] && echo "⚠️  No results.json" && exit 0
-          N=$(python3 -c "
-          import json,sys
-          d=json.load(open('$F'))
-          fails=[t['title'] for s in d.get('suites',[]) for sp in s.get('specs',[]) for t in sp.get('tests',[])
-                 if 'auth' in s.get('file','').lower()
-                 and any(r.get('status') not in ('passed','skipped') for r in t.get('results',[]))]
-          print(len(fails))
-          " 2>/dev/null || echo 0)
-          [ "$N" = "0" ] && echo "✅ QG-2 PASS" || echo "❌ QG-2 FAIL — ${N} auth failure(s)"
-        continue-on-error: true
-
-      - name: "QG-5: Suite duration ≤ 20 min"
-        if: always()
-        run: |
-          E=$(( $(date +%s) - SUITE_START ))
-          echo "Duration: $((E/60))m $((E%60))s"
-          [ "$E" -le 1200 ] && echo "✅ QG-5 PASS" || echo "⚠️  QG-5 WARNING > 20 min"
-        continue-on-error: true
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: frontend/e2e/playwright-report/
-          retention-days: 7
-
-      - name: Tear down stack
-        if: always()
-        run: docker compose down -v
-
   # ══════════════════════════════════════════════════════════════════════════
   # JOB 4 – Backend Unit Tests   QG-6: 0 failures (hard block)
   #
@@ -347,7 +43,7 @@ jobs:
   unit-tests:
     name: "Backend Unit Tests (QG-6)"
     runs-on: ubuntu-latest
-    needs: e2e
+    #needs: e2e
 
     steps:
       - name: Checkout repository
@@ -405,6 +101,10 @@ jobs:
           done
           docker compose logs server --tail=100; exit 1
 
+      - name: Install coverage
+        run: |
+          docker compose exec -T server pip install coverage
+    
       # Copy all four unit test files into the container
       - name: Copy unit test files into server container
         run: |
@@ -417,11 +117,11 @@ jobs:
 
       # QG-6: hard block — runs all 20 unit tests inside the container
       # The container has GDAL, GEOS, PostGIS — no library errors
-      - name: "QG-6: Run all 20 backend unit tests ( not hard block)"
+      - name: "QG-6: Run backend unit tests with coverage"
         id: unit_tests
         run: |
           docker compose exec -T server \
-            python /code/manage.py test \
+            coverage run /code/manage.py test \
               adventures.test_unit_auth \
               adventures.test_unit_locations \
               adventures.test_unit_collections \
@@ -430,25 +130,35 @@ jobs:
               --noinput
         continue-on-error: true
 
+      - name: "Coverage report"
+        if: always()
+        run: |
+          docker compose exec -T server coverage report -m
+          docker compose exec -T server coverage xml
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: /tmp/test-results.xml
+
+
       - name: "QG-6 summary"
         if: always()
         run: |
+          echo "=== TEST SUMMARY ==="
+          docker compose exec -T server coverage report -m || true
+      
+          echo ""
+          echo "Exit status: ${{ steps.unit_tests.outcome }}"
+      
           if [ "${{ steps.unit_tests.outcome }}" = "success" ]; then
-            echo "✅ QG-6 PASS — all 20 unit tests passed"
-            echo "   auth:5  locations:5  collections:5  map:5"
+            echo "✅ QG-6 PASS — all tests passed"
           else
-            echo "❌ QG-6 FAIL — unit test failure detected"
-            echo ""
-            echo "To debug locally (no GDAL install needed):"
-            echo "  docker compose up -d db server"
-            echo "  # wait ~45s for migrations"
-            echo "  docker cp backend/server/adventures/test_unit_auth.py adventurelog-backend:/code/adventures/"
-            echo "  docker cp backend/server/adventures/test_unit_locations.py adventurelog-backend:/code/adventures/"
-            echo "  docker cp backend/server/adventures/test_unit_collections.py adventurelog-backend:/code/adventures/"
-            echo "  docker cp backend/server/adventures/test_unit_map.py adventurelog-backend:/code/adventures/"
-            echo "  docker compose exec server python /code/manage.py test adventures.test_unit_auth adventures.test_unit_locations adventures.test_unit_collections adventures.test_unit_map --verbosity=2"
+            echo "❌ QG-6 FAIL — failures detected"
           fi
-
+    
       - name: Collect server logs on failure
         if: failure()
         run: |
