@@ -408,9 +408,10 @@ jobs:
       # Copy all four unit test files into the container
       - name: Copy unit test files into server container
         run: |
+          CONTAINER=$(docker compose ps -q server)
           for f in test_unit_auth test_unit_locations test_unit_collections test_unit_map; do
             docker cp backend/server/adventures/${f}.py \
-              adventurelog-backend:/code/adventures/${f}.py
+              ${CONTAINER}:/code/adventures/${f}.py
             echo "✅ Copied ${f}.py"
           done
           docker compose exec -T server ls /code/adventures/test_unit_*.py
