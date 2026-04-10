@@ -599,3 +599,178 @@ jobs:
       - name: Tear down stack
         if: always()
         run: docker compose down -v
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # JOB 7 – Mutation Testing   QG-9: mutation score reported (not hard block)
+  #
+  # Strategy (mirrors unit-tests job):
+  #   1. Spin up db + server containers (same stack pattern as every other job)
+  #   2. docker cp the 4 unit test files + mutation_runner.py into the container
+  #   3. Run mutation_runner.py ON THE RUNNER (not inside the container) —
+  #      it uses `docker exec` calls internally, so it needs only Python on
+  #      the runner and a running container to exec into
+  #   4. The runner applies each mutant, runs manage.py test inside the
+  #      container, restores the original, records killed/survived
+  #   5. Prints summary table + saves JSON report as artifact
+  #
+  # QG-9 is NOT a hard block — a low mutation score is a quality signal,
+  # not a blocker. Mutation testing is informational by design.
+  #
+  # Runs after endpoint-tests so it does not extend the critical path.
+  # ══════════════════════════════════════════════════════════════════════════
+  mutation-tests:
+    name: "Mutation Testing (QG-9)"
+    runs-on: ubuntu-latest
+    needs: endpoint-tests
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Reset Docker auth
+        run: docker logout
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts"; exit 0
+            fi
+            echo "Attempt ${i}/40 — waiting 5s..."; sleep 5
+          done
+          docker compose logs db; exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for migrations..."
+          sleep 45
+
+      - name: Wait for API to respond
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API responding (HTTP ${STATUS})"; exit 0
+            fi
+            echo "Attempt ${i}/30 — HTTP ${STATUS}"; sleep 5
+          done
+          docker compose logs server --tail=100; exit 1
+
+      # Copy the 4 unit test files into the container — the mutation runner
+      # uses manage.py test against these to detect killed/survived mutants
+      - name: Copy unit test files into container
+        run: |
+          CONTAINER=$(docker compose ps -q server)
+          for f in test_unit_auth test_unit_locations test_unit_collections test_unit_map; do
+            docker cp backend/server/adventures/${f}.py \
+              ${CONTAINER}:/code/adventures/${f}.py
+            echo "✅ Copied ${f}.py"
+          done
+
+      # Set up Python on the runner — mutation_runner.py runs HERE,
+      # uses subprocess to call docker exec into the container
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create reports directory
+        run: mkdir -p backend/server/mutation_testing/reports
+
+      # QG-9: Run the mutation runner (not hard block)
+      # Each of the 20 mutants is applied, tested, and restored automatically.
+      # Expected duration: ~15 min (20 mutants × ~45s per test run)
+      - name: "QG-9: Run mutation testing (not hard block)"
+        id: mutation_run
+        run: |
+          python backend/server/mutation_testing/mutation_runner.py \
+            2>&1 | tee backend/server/mutation_testing/reports/mutation_run.log
+        continue-on-error: true   # QG-9 is not a hard block
+
+      # Parse the JSON report written by mutation_runner.py and print QG-9 summary
+      - name: "QG-9: Print mutation score summary"
+        if: always()
+        run: |
+          # Find the most recent JSON report
+          REPORT=$(ls -t backend/server/mutation_testing/reports/mutation_report_*.json 2>/dev/null | head -1)
+
+          if [ -z "$REPORT" ]; then
+            echo "⚠️  No mutation report JSON found — runner may have failed early"
+            echo "    Check mutation_run.log in the artifact for details"
+            exit 0
+          fi
+
+          python3 - "$REPORT" << 'PYEOF'
+          import json, sys
+
+          report = json.load(open(sys.argv[1]))
+          totals  = report["totals"]
+          summary = report["summary"]
+
+          print("=" * 60)
+          print("QG-9 MUTATION TESTING RESULTS")
+          print("=" * 60)
+          print(f"{'Module':<22} {'Created':>8} {'Killed':>8} {'Survived':>9} {'Score':>8}")
+          print("-" * 60)
+          for module, s in summary.items():
+              print(f"{module:<22} {s['created']:>8} {s['killed']:>8} {s['survived']:>9} {s['score']:>7.1f}%")
+          print("-" * 60)
+          print(f"{'OVERALL':<22} {totals['created']:>8} {totals['killed']:>8} "
+                f"{totals['survived']:>9} {totals['score']:>7.1f}%")
+          print("=" * 60)
+
+          survived = [m for m in report["mutants"] if m["status"] == "SURVIVED"]
+          if survived:
+              print(f"\nSurviving mutants ({len(survived)}) — gaps in test coverage:")
+              for m in survived:
+                  print(f"  {m['id']:8}  {m['type']}")
+                  print(f"           File: {m['file']}")
+
+          score = totals["score"]
+          if score >= 70:
+              print(f"\n✅ QG-9 PASS — mutation score {score:.1f}% ≥ 70% (not hard block)")
+          else:
+              print(f"\n⚠️  QG-9 INFO — mutation score {score:.1f}% < 70% (not hard block)")
+              print("   Add tests to cover surviving mutants to raise this score.")
+          PYEOF
+
+      - name: Upload mutation test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-testing-reports
+          path: backend/server/mutation_testing/reports/
+          retention-days: 14
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v
