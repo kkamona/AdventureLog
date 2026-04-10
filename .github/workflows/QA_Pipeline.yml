@@ -706,6 +706,7 @@ jobs:
       - name: Create reports directory
         run: mkdir -p backend/server/mutation_testing/reports
 
+<<<<<<< HEAD
       # Pre-create the test database with --keepdb so Django does not try to
       # DROP it between mutant runs (gunicorn holds open connections, causing
       # "database is being accessed by other users" on DROP DATABASE).
@@ -717,6 +718,8 @@ jobs:
               --verbosity=0 --noinput --keepdb
         continue-on-error: true  # Failures here are OK; we just need the DB to exist
 
+=======
+>>>>>>> aca3743c7670ca1864d3556051bd555bf3bec0d4
       # QG-9: Run the mutation runner (not hard block)
       # Each of the 20 mutants is applied, tested, and restored automatically.
       # Expected duration: ~15 min (20 mutants × ~45s per test run)
