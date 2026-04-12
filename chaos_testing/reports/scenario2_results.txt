@@ -1,0 +1,132 @@
+SCENARIO 2 — Backend API Downtime
+===================================
+Fault type:          Service stop (docker compose stop server)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-backend (Django/Gunicorn)
+
+OBSERVATIONS:
+  Frontend HTTP during fault:    000000
+  Backend HTTP during fault:     000000
+  /locations page during fault:  000000
+  Auth endpoint during fault:    000000
+
+RECOVERY:
+  Backend recovery time:  [16:50:48] ✅ Backend recovered after 0s (HTTP 000000)
+0s
+  Frontend recovery time: [16:50:48] ✅ Frontend recovered after 0s (HTTP 000000)
+0s
+  Backend HTTP after:     000000
+  Frontend HTTP after:    000000
+  Auth HTTP after:        000000
+
+METRICS:
+  System availability:   [FILL IN]
+  MTTR:                  [16:50:48] ✅ Backend recovered after 0s (HTTP 000000)
+0s (backend)
+  Error propagation:     Backend down → Frontend API calls fail →
+                         hooks.server.ts clears session → redirect to login
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: browser showing frontend error during backend downtime]
+  [ATTACH: network tab showing failed API calls]
+  [ATTACH: terminal showing docker ps during fault]
+  [ATTACH: all services healthy after recovery]
+SCENARIO 2 — Backend API Downtime
+===================================
+Fault type:          Service stop (docker compose stop server)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-backend (Django/Gunicorn)
+
+OBSERVATIONS:
+  Frontend HTTP during fault:    200
+  Backend HTTP during fault:     000000
+  /locations page during fault:  302
+  Auth endpoint during fault:    000000
+
+RECOVERY:
+  Backend recovery time:  [17:15:37] ✅ Backend recovered after 0s (HTTP 000000)
+0s
+  Frontend recovery time: [17:15:37] ✅ Frontend recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:     000000
+  Frontend HTTP after:    200
+  Auth HTTP after:        000000
+
+METRICS:
+  System availability:   [FILL IN]
+  MTTR:                  [17:15:37] ✅ Backend recovered after 0s (HTTP 000000)
+0s (backend)
+  Error propagation:     Backend down → Frontend API calls fail →
+                         hooks.server.ts clears session → redirect to login
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: browser showing frontend error during backend downtime]
+  [ATTACH: network tab showing failed API calls]
+  [ATTACH: terminal showing docker ps during fault]
+  [ATTACH: all services healthy after recovery]
+SCENARIO 2 — Backend API Downtime
+===================================
+Fault type:          Service stop (docker compose stop server)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-backend (Django/Gunicorn)
+
+OBSERVATIONS:
+  Frontend HTTP during fault:    200
+  Backend HTTP during fault:     000000
+  /locations page during fault:  302
+  Auth endpoint during fault:    000000
+
+RECOVERY:
+  Backend recovery time:  [17:39:54] ✅ Backend recovered after 0s (HTTP 000000)
+0s
+  Frontend recovery time: [17:39:54] ✅ Frontend recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:     000000
+  Frontend HTTP after:    200
+  Auth HTTP after:        000000
+
+METRICS:
+  System availability:   [FILL IN]
+  MTTR:                  [17:39:54] ✅ Backend recovered after 0s (HTTP 000000)
+0s (backend)
+  Error propagation:     Backend down → Frontend API calls fail →
+                         hooks.server.ts clears session → redirect to login
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: browser showing frontend error during backend downtime]
+  [ATTACH: network tab showing failed API calls]
+  [ATTACH: terminal showing docker ps during fault]
+  [ATTACH: all services healthy after recovery]
+SCENARIO 2 — Backend API Downtime
+===================================
+Fault type:          Service stop (docker compose stop server)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-backend (Django/Gunicorn)
+
+OBSERVATIONS:
+  Frontend HTTP during fault:    200
+  Backend HTTP during fault:     000000
+  /locations page during fault:  302
+  Auth endpoint during fault:    000000
+
+RECOVERY:
+  Backend recovery time:  [17:41:50] ✅ Backend recovered after 0s (HTTP 000000)
+0s
+  Frontend recovery time: [17:41:50] ✅ Frontend recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:     000000
+  Frontend HTTP after:    200
+  Auth HTTP after:        000000
+
+METRICS:
+  System availability:   [FILL IN]
+  MTTR:                  [17:41:50] ✅ Backend recovered after 0s (HTTP 000000)
+0s (backend)
+  Error propagation:     Backend down → Frontend API calls fail →
+                         hooks.server.ts clears session → redirect to login
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: browser showing frontend error during backend downtime]
+  [ATTACH: network tab showing failed API calls]
+  [ATTACH: terminal showing docker ps during fault]
+  [ATTACH: all services healthy after recovery]

@@ -785,3 +785,339 @@ jobs:
       - name: Tear down stack
         if: always()
         run: docker compose down -v
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # JOB 8 – JMeter Performance Tests   QG-7 (replaces k6 reference)
+  #
+  # Runs the AdventureLog.jmx plan from performance/JMeter/ against the live
+  # stack. Thresholds mirror the existing QG-7 definition:
+  #   • p(95) response time < 800 ms
+  #   • Error rate < 1 %
+  #
+  # Strategy:
+  #   1. Spin up db + server (standard pattern)
+  #   2. Download Apache JMeter 5.6.3 in non-GUI mode (no display needed)
+  #   3. Run JMeter, emit JTL results file + HTML dashboard
+  #   4. Parse JTL with Python to evaluate QG-7 thresholds
+  #   5. Upload HTML dashboard + JTL as artifact
+  #
+  # QG-7 is NOT a hard block — a threshold breach is a quality signal.
+  # Runs in parallel with chaos-tests (both need mutation-tests only).
+  # ══════════════════════════════════════════════════════════════════════════
+  performance-tests:
+    name: "JMeter Performance Tests (QG-7)"
+    runs-on: ubuntu-latest
+    needs: mutation-tests
+    timeout-minutes: 30
+    continue-on-error: true   # QG-7 is not a hard block
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Reset Docker auth
+        run: docker logout
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts"; exit 0
+            fi
+            echo "Attempt ${i}/40 — waiting 5s..."; sleep 5
+          done
+          docker compose logs db; exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for migrations..."
+          sleep 45
+
+      - name: Wait for API to respond
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API responding (HTTP ${STATUS})"; exit 0
+            fi
+            echo "Attempt ${i}/30 — HTTP ${STATUS}"; sleep 5
+          done
+          docker compose logs server --tail=100; exit 1
+
+      - name: Set up Java 17 (required by JMeter)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Apache JMeter 5.6.3
+        run: |
+          JMETER_VERSION=5.6.3
+          wget -q "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz"
+          tar -xzf "apache-jmeter-${JMETER_VERSION}.tgz"
+          echo "$(pwd)/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
+          echo "JMETER_HOME=$(pwd)/apache-jmeter-${JMETER_VERSION}" >> $GITHUB_ENV
+
+      - name: Create JMeter output directories
+        run: mkdir -p performance/reports/jtl performance/reports/dashboard
+
+      - name: "QG-7: Run JMeter performance test (not hard block)"
+        id: jmeter_run
+        run: |
+          jmeter -n \
+            -t performance/JMeter/AdventureLog.jmx \
+            -l performance/reports/jtl/results.jtl \
+            -e -o performance/reports/dashboard \
+            -Jhost=localhost \
+            -Jport=8016 \
+            -Jprotocol=http \
+            2>&1 | tee performance/reports/jmeter_run.log
+        continue-on-error: true   # threshold evaluation happens below
+
+      - name: "QG-7: Evaluate thresholds (p95 < 800 ms, error rate < 1%)"
+        if: always()
+        run: |
+          python3 - << 'PYEOF'
+          import csv, sys, os
+
+          jtl_path = "performance/reports/jtl/results.jtl"
+          if not os.path.exists(jtl_path):
+              print("⚠️  QG-7: results.jtl not found — JMeter may have failed to start.")
+              print("   Check jmeter_run.log in the artifact for details.")
+              sys.exit(0)
+
+          latencies, errors, total = [], 0, 0
+          with open(jtl_path, newline="") as f:
+              reader = csv.DictReader(f)
+              for row in reader:
+                  total += 1
+                  latencies.append(int(row.get("elapsed", 0)))
+                  if row.get("success", "true").lower() != "true":
+                      errors += 1
+
+          if total == 0:
+              print("⚠️  QG-7: No samples found in results.jtl")
+              sys.exit(0)
+
+          latencies.sort()
+          p95        = latencies[int(len(latencies) * 0.95)]
+          error_rate = errors / total * 100
+
+          print("=" * 55)
+          print("QG-7 PERFORMANCE TEST RESULTS (JMeter)")
+          print("=" * 55)
+          print(f"  Total samples : {total}")
+          print(f"  p(95) latency : {p95} ms   (threshold: < 800 ms)")
+          print(f"  Error rate    : {error_rate:.2f}%   (threshold: < 1%)")
+          print("=" * 55)
+
+          p95_pass = p95 < 800
+          err_pass = error_rate < 1.0
+
+          print(f"  p95  {'✅ PASS' if p95_pass else '❌ FAIL'}")
+          print(f"  Err  {'✅ PASS' if err_pass else '❌ FAIL'}")
+          print()
+          if p95_pass and err_pass:
+              print("✅ QG-7 PASS — performance within thresholds (not hard block)")
+          else:
+              print("⚠️  QG-7 WARN — one or more thresholds breached (not hard block)")
+          PYEOF
+        continue-on-error: true   # QG-7 is informational
+
+      - name: Upload JMeter reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-performance-reports
+          path: performance/reports/
+          retention-days: 14
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # JOB 9 – Chaos Testing   QG-10: resilience reported (not hard block)
+  #
+  # Runs chaos_testing/scripts/chaos_tests.sh against the live stack.
+  # The script performs fault-injection scenarios (container kills, restarts,
+  # network pressure, etc.) and prints PASS / FAIL lines.
+  #
+  # Strategy:
+  #   1. Spin up db + server (standard pattern)
+  #   2. Make chaos_tests.sh executable and run it, capturing output
+  #   3. Count PASS / FAIL lines → QG-10 summary
+  #   4. Upload full chaos log + container logs as artifact
+  #
+  # QG-10 is NOT a hard block — chaos tests are inherently
+  # environment-sensitive; failures are signals, not pipeline blockers.
+  # Runs in parallel with performance-tests (both need mutation-tests only).
+  # ══════════════════════════════════════════════════════════════════════════
+  chaos-tests:
+    name: "Chaos Testing (QG-10)"
+    runs-on: ubuntu-latest
+    needs: mutation-tests
+    timeout-minutes: 30
+    continue-on-error: true   # QG-10 is not a hard block
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          PUBLIC_SERVER_URL=http://server:80
+          ORIGIN=http://localhost:8015
+          BODY_SIZE_LIMIT=Infinity
+          FRONTEND_PORT=8015
+          PGHOST=db
+          POSTGRES_DB=database
+          POSTGRES_USER=adventure
+          POSTGRES_PASSWORD=changeme123
+          SECRET_KEY=ci-test-secret-key-do-not-use-in-production
+          DJANGO_ADMIN_USERNAME=admin
+          DJANGO_ADMIN_PASSWORD=Admin1234!
+          DJANGO_ADMIN_EMAIL=admin@adventurelog.qa
+          PUBLIC_URL=http://localhost:8016
+          CSRF_TRUSTED_ORIGINS=http://localhost:8016,http://localhost:8015
+          DEBUG=True
+          FRONTEND_URL=http://localhost:8015
+          BACKEND_PORT=8016
+          DISABLE_REGISTRATION=False
+          EOF
+
+      - name: Reset Docker auth
+        run: docker logout
+
+      - name: Start database container
+        run: docker compose up -d db
+
+      - name: Wait for database to be ready
+        run: |
+          for i in {1..40}; do
+            if docker compose exec -T db pg_isready -U adventure -d database > /dev/null 2>&1; then
+              echo "✅ Database ready after ${i} attempts"; exit 0
+            fi
+            echo "Attempt ${i}/40 — waiting 5s..."; sleep 5
+          done
+          docker compose logs db; exit 1
+
+      - name: Start backend container
+        run: |
+          docker compose up -d server
+          echo "Waiting 45s for migrations..."
+          sleep 45
+
+      - name: Wait for API to respond
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 \
+              http://localhost:8016/ 2>/dev/null || echo "000")
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "✅ API responding (HTTP ${STATUS})"; exit 0
+            fi
+            echo "Attempt ${i}/30 — HTTP ${STATUS}"; sleep 5
+          done
+          docker compose logs server --tail=100; exit 1
+
+      - name: Make chaos script executable
+        run: chmod +x chaos_testing/scripts/chaos_tests.sh
+
+      - name: Create chaos reports directory
+        run: mkdir -p chaos_testing/reports
+
+      - name: "QG-10: Run chaos tests (not hard block)"
+        id: chaos_run
+        run: |
+          chaos_testing/scripts/chaos_tests.sh \
+            2>&1 | tee chaos_testing/reports/chaos_run.log
+        continue-on-error: true   # threshold evaluation happens below
+        env:
+          BACKEND_URL: http://localhost:8016
+          FRONTEND_URL: http://localhost:8015
+          COMPOSE_PROJECT_NAME: adventurelog
+
+      - name: "QG-10: Print chaos test summary"
+        if: always()
+        run: |
+          LOG="chaos_testing/reports/chaos_run.log"
+
+          if [ ! -f "$LOG" ]; then
+            echo "⚠️  QG-10: No chaos log found — script may not have started."
+            exit 0
+          fi
+
+          PASSES=$(grep -c "PASS" "$LOG" 2>/dev/null || echo 0)
+          FAILS=$(grep  -c "FAIL" "$LOG" 2>/dev/null || echo 0)
+          TOTAL=$(( PASSES + FAILS ))
+
+          echo "=============================================="
+          echo "QG-10 CHAOS TESTING RESULTS"
+          echo "=============================================="
+          echo "  Total scenarios : ${TOTAL}"
+          echo "  Passed          : ${PASSES}"
+          echo "  Failed          : ${FAILS}"
+          echo "=============================================="
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "⚠️  QG-10: No PASS/FAIL lines detected in output."
+            echo "   Ensure chaos_tests.sh emits lines containing PASS or FAIL."
+          elif [ "$FAILS" -eq 0 ]; then
+            echo "✅ QG-10 PASS — all ${PASSES} chaos scenario(s) recovered (not hard block)"
+          else
+            SCORE=$(python3 -c "print(round($PASSES/$TOTAL*100,1))" 2>/dev/null || echo "?")
+            echo "⚠️  QG-10 WARN — ${FAILS} scenario(s) did not recover (${SCORE}% resilience)"
+            echo "   Review chaos_run.log in the artifact for details."
+          fi
+
+          echo ""
+          echo "--- Failing scenarios (if any) ---"
+          grep "FAIL" "$LOG" || echo "(none)"
+        continue-on-error: true
+
+      - name: Collect container logs for chaos diagnostics
+        if: always()
+        run: |
+          docker compose logs server > chaos_testing/reports/chaos-backend.log 2>&1 || true
+          docker compose logs db     > chaos_testing/reports/chaos-db.log      2>&1 || true
+
+      - name: Upload chaos test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-testing-reports
+          path: chaos_testing/reports/
+          retention-days: 14
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v

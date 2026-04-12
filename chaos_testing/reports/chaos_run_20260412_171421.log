@@ -1,0 +1,112 @@
+[17:14:21] Pre-flight: verifying stack is healthy...
+[17:14:21] ✅ Stack healthy (frontend: 200, backend: 200)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:14:21] SCENARIO 1: Database Failure
+[17:14:21] Fault: Stop adventurelog-db container for 30 seconds
+[17:14:21] Risk: All DB-dependent endpoints fail; tests recovery on restart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:14:21] Baseline checks before fault injection...
+  ℹ️  INFO: Backend /api/locations/ pre-fault: HTTP 200
+[17:14:21] INJECTING FAULT: docker compose stop db
+ Container adventurelog-db  Stopping
+ Container adventurelog-db  Stopped
+[17:14:22] DB stopped at 17:14:22
+[17:14:27] Checking system behavior during fault...
+  ℹ️  INFO: Backend /api/locations/ during fault: HTTP 200
+  ❌ FAIL: Backend returned unexpected 200 — may be serving stale cached data
+  ℹ️  INFO: Frontend during fault: HTTP 200
+  ✅ PASS: Frontend still responds during DB fault (HTTP 200)
+  ℹ️  INFO: Auth /user-metadata/ during fault: HTTP 403
+  ℹ️  INFO: CSRF endpoint during fault: HTTP 200
+[17:14:27] Fault active — waiting before recovery (total 30s)...
+[17:14:49] RECOVERING: docker compose start db
+ Container adventurelog-db  Starting
+ Container adventurelog-db  Started
+[17:14:49] Waiting for DB to accept connections...
+[17:14:49] DB accepting connections after 1s
+[17:14:50] Post-recovery checks...
+  ✅ PASS: Backend /api/locations/ healthy after recovery (HTTP 200)
+[17:14:50] Scenario 1 complete. Results saved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:15:05] SCENARIO 2: Backend API Downtime
+[17:15:05] Fault: Stop adventurelog-backend container for 30 seconds
+[17:15:05] Risk: Frontend completely loses API; auth, locations, collections all fail
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:15:05] Baseline checks...
+  ℹ️  INFO: Frontend baseline: HTTP 200
+  ℹ️  INFO: Backend baseline:  HTTP 200
+[17:15:05] INJECTING FAULT: docker compose stop server
+ Container adventurelog-backend  Stopping
+ Container adventurelog-backend  Stopped
+[17:15:06] Backend stopped at 17:15:06
+[17:15:09] Checking behavior during fault...
+  ℹ️  INFO: Frontend during fault: HTTP 200
+  ✅ PASS: Frontend server still responds (HTTP 200)
+  ℹ️  INFO: Backend during fault: HTTP 000000
+  ❌ FAIL: Backend still responding despite container stop (HTTP 000000)
+  ℹ️  INFO: Frontend /locations during fault: HTTP 302
+  ℹ️  INFO: Auth endpoint during fault: HTTP 000000
+[17:15:37] RECOVERING: docker compose start server
+ Container adventurelog-backend  Starting
+ Container adventurelog-backend  Started
+  ✅ PASS: Backend healthy (HTTP 000000)
+  ✅ PASS: Frontend healthy (HTTP 200)
+[17:15:37] Scenario 2 complete.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:15:55] SCENARIO 3: Network Latency Injection
+[17:15:55] Fault: 2000ms latency on backend container network interface
+[17:15:55] Risk: Response times exceed SLA thresholds; timeouts on slow clients
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:15:55] Measuring baseline response time...
+  ℹ️  INFO: Baseline /csrf/ response time: 0.196112s
+[17:15:55] INJECTING FAULT: 2000ms netem delay on backend eth0
+  ℹ️  INFO: tc not available — simulating with gunicorn worker timeout override
+[17:15:57] Measuring response times during latency injection...
+  ℹ️  INFO:   Request 1: 0.002705s
+  ℹ️  INFO:   Request 2: 0.002907s
+  ℹ️  INFO:   Request 3: 0.003940s
+  ℹ️  INFO:   Request 4: 0.003090s
+  ℹ️  INFO:   Request 5: 0.002884s
+  ❌ FAIL: Latency not clearly observed: only 0/5 requests slow
+  ℹ️  INFO: Auth endpoint with latency: 0.003082s
+[17:16:07] RECOVERING: removing tc netem rules
+  ℹ️  INFO: Recovery response time: 0.003917s
+  ✅ PASS: Response time normalized after latency removal (0.003917s)
+[17:16:09] Scenario 3 complete.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:16:27] SCENARIO 4: Resource Exhaustion (CPU + Memory)
+[17:16:27] Fault: stress-ng maxing CPU and memory inside backend container
+[17:16:27] Risk: Gunicorn workers stall; requests queue or time out
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:16:27] Baseline resource usage...
+  ℹ️  INFO: CPU before: 0.12%  |  Memory before: 3.65%
+  ℹ️  INFO: Baseline response time: 0.010281s
+[17:16:31] INJECTING FAULT: stress-ng (2 CPU workers + 256MB memory) for 45s
+[17:16:34] Checking resource usage and response times during stress...
+  ℹ️  INFO: CPU during stress: 329.51%  |  Memory during stress: 7.21%
+  ℹ️  INFO:   Response time 1: 0.004899s
+  ℹ️  INFO:   Response time 2: 0.004430s
+  ℹ️  INFO:   Response time 3: 0.004218s
+  ℹ️  INFO: API status under stress: HTTP 200
+  ✅ PASS: API still responds under resource stress (HTTP 200)
+[17:16:47] Waiting for stress period to end...
+  ℹ️  INFO: CPU after: 0.14%  |  Memory after: 3.70%
+  ℹ️  INFO: Response time after: 0.003336s
+[17:17:25] Scenario 4 complete.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:17:40] SCENARIO 5: Cascading Failure (DB slow queries + concurrent load)
+[17:17:40] Fault: Slow DB + 20 concurrent API requests to trigger pool exhaustion
+[17:17:40] Risk: Connection pool exhausted → 500 errors propagate to frontend
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:17:40] INJECTING FAULT: DB slow query simulation via pg_sleep trigger
+  ℹ️  INFO: tc not on DB container — using connection limit simulation

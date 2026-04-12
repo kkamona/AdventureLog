@@ -1,0 +1,108 @@
+SCENARIO 3 — Network Latency Injection
+=========================================
+Fault type:          2000ms netem delay on backend container eth0
+Fault duration:      17s
+Affected module:     adventurelog-backend network interface
+
+OBSERVATIONS:
+  Baseline response time:           0.285039s
+  tc applied successfully:          false
+  Responses during fault (5 reqs):  0.006807 0.002220 0.164928 0.003847 0.002727
+  Slow requests (>1.5s):            0 / 5
+  Auth endpoint with latency:       0.007998s
+
+RECOVERY:
+  Response time after tc removal:   0.002585s
+  Latency normalized:               [FILL IN: yes/no]
+
+METRICS:
+  p(95) response time during fault: [FILL IN from k6 run]
+  Requests timed out:               [FILL IN]
+  MTTR (latency removal):           immediate (tc del)
+  Error rate during fault:          [FILL IN]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: k6 output showing p(95) > 800ms during fault]
+  [ATTACH: terminal showing tc qdisc commands]
+  [ATTACH: response time graph showing spike and recovery]
+SCENARIO 3 — Network Latency Injection
+=========================================
+Fault type:          2000ms netem delay on backend container eth0
+Fault duration:      14s
+Affected module:     adventurelog-backend network interface
+
+OBSERVATIONS:
+  Baseline response time:           0.196112s
+  tc applied successfully:          false
+  Responses during fault (5 reqs):  0.002705 0.002907 0.003940 0.003090 0.002884
+  Slow requests (>1.5s):            0 / 5
+  Auth endpoint with latency:       0.003082s
+
+RECOVERY:
+  Response time after tc removal:   0.003917s
+  Latency normalized:               [FILL IN: yes/no]
+
+METRICS:
+  p(95) response time during fault: [FILL IN from k6 run]
+  Requests timed out:               [FILL IN]
+  MTTR (latency removal):           immediate (tc del)
+  Error rate during fault:          [FILL IN]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: k6 output showing p(95) > 800ms during fault]
+  [ATTACH: terminal showing tc qdisc commands]
+  [ATTACH: response time graph showing spike and recovery]
+SCENARIO 3 — Network Latency Injection
+=========================================
+Fault type:          2000ms netem delay on backend container eth0
+Fault duration:      17s
+Affected module:     adventurelog-backend network interface
+
+OBSERVATIONS:
+  Baseline response time:           0.162985s
+  tc applied successfully:          false
+  Responses during fault (5 reqs):  0.003140 0.005571 0.003571 0.004723 0.007372
+  Slow requests (>1.5s):            0 / 5
+  Auth endpoint with latency:       0.167797s
+
+RECOVERY:
+  Response time after tc removal:   0.003331s
+  Latency normalized:               [FILL IN: yes/no]
+
+METRICS:
+  p(95) response time during fault: [FILL IN from k6 run]
+  Requests timed out:               [FILL IN]
+  MTTR (latency removal):           immediate (tc del)
+  Error rate during fault:          [FILL IN]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: k6 output showing p(95) > 800ms during fault]
+  [ATTACH: terminal showing tc qdisc commands]
+  [ATTACH: response time graph showing spike and recovery]
+SCENARIO 3 — Network Latency Injection
+=========================================
+Fault type:          2000ms netem delay on backend container eth0
+Fault duration:      14s
+Affected module:     adventurelog-backend network interface
+
+OBSERVATIONS:
+  Baseline response time:           0.168546s
+  tc applied successfully:          false
+  Responses during fault (5 reqs):  0.002641 0.002832 0.003893 0.209412 0.003313
+  Slow requests (>1.5s):            0 / 5
+  Auth endpoint with latency:       0.004254s
+
+RECOVERY:
+  Response time after tc removal:   0.002028s
+  Latency normalized:               [FILL IN: yes/no]
+
+METRICS:
+  p(95) response time during fault: [FILL IN from k6 run]
+  Requests timed out:               [FILL IN]
+  MTTR (latency removal):           immediate (tc del)
+  Error rate during fault:          [FILL IN]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: k6 output showing p(95) > 800ms during fault]
+  [ATTACH: terminal showing tc qdisc commands]
+  [ATTACH: response time graph showing spike and recovery]

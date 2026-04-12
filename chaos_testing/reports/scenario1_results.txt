@@ -1,0 +1,116 @@
+SCENARIO 1 — Database Failure
+==============================
+Fault type:          Service stop (docker compose stop db)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-db (PostGIS 16)
+
+OBSERVATIONS:
+  Backend HTTP during fault:  200
+  Frontend HTTP during fault: 000000
+  Auth HTTP during fault:     403
+  CSRF HTTP during fault:     200
+
+RECOVERY:
+  DB ready:                   1s after restart
+  Backend recovery time:      [16:49:56] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:         200
+  Auth HTTP after:            403
+
+METRICS:
+  System availability:        [FILL IN: calculate uptime% from monitoring tool]
+  MTTR (Mean Time to Recover): [16:49:56] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Error propagation:          Backend 5xx → Frontend shows error page
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: screenshot of frontend error page during fault]
+  [ATTACH: screenshot of backend 500 response in browser/Postman]
+  [ATTACH: screenshot of recovery — all endpoints green]
+SCENARIO 1 — Database Failure
+==============================
+Fault type:          Service stop (docker compose stop db)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-db (PostGIS 16)
+
+OBSERVATIONS:
+  Backend HTTP during fault:  200
+  Frontend HTTP during fault: 200
+  Auth HTTP during fault:     403
+  CSRF HTTP during fault:     200
+
+RECOVERY:
+  DB ready:                   1s after restart
+  Backend recovery time:      [17:14:49] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:         200
+  Auth HTTP after:            403
+
+METRICS:
+  System availability:        [FILL IN: calculate uptime% from monitoring tool]
+  MTTR (Mean Time to Recover): [17:14:49] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Error propagation:          Backend 5xx → Frontend shows error page
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: screenshot of frontend error page during fault]
+  [ATTACH: screenshot of backend 500 response in browser/Postman]
+  [ATTACH: screenshot of recovery — all endpoints green]
+SCENARIO 1 — Database Failure
+==============================
+Fault type:          Service stop (docker compose stop db)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-db (PostGIS 16)
+
+OBSERVATIONS:
+  Backend HTTP during fault:  000000
+  Frontend HTTP during fault: 200
+  Auth HTTP during fault:     000000
+  CSRF HTTP during fault:     000000
+
+RECOVERY:
+  DB ready:                   1s after restart
+  Backend recovery time:      [17:39:03] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:         200
+  Auth HTTP after:            403
+
+METRICS:
+  System availability:        [FILL IN: calculate uptime% from monitoring tool]
+  MTTR (Mean Time to Recover): [17:39:03] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Error propagation:          Backend 5xx → Frontend shows error page
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: screenshot of frontend error page during fault]
+  [ATTACH: screenshot of backend 500 response in browser/Postman]
+  [ATTACH: screenshot of recovery — all endpoints green]
+SCENARIO 1 — Database Failure
+==============================
+Fault type:          Service stop (docker compose stop db)
+Fault duration:      ~30 seconds
+Affected module:     adventurelog-db (PostGIS 16)
+
+OBSERVATIONS:
+  Backend HTTP during fault:  200
+  Frontend HTTP during fault: 200
+  Auth HTTP during fault:     403
+  CSRF HTTP during fault:     200
+
+RECOVERY:
+  DB ready:                   1s after restart
+  Backend recovery time:      [17:41:02] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Backend HTTP after:         200
+  Auth HTTP after:            403
+
+METRICS:
+  System availability:        [FILL IN: calculate uptime% from monitoring tool]
+  MTTR (Mean Time to Recover): [17:41:02] ✅ Backend after DB restart recovered after 0s (HTTP 200)
+0s
+  Error propagation:          Backend 5xx → Frontend shows error page
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: screenshot of frontend error page during fault]
+  [ATTACH: screenshot of backend 500 response in browser/Postman]
+  [ATTACH: screenshot of recovery — all endpoints green]

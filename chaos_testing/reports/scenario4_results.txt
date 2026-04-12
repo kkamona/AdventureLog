@@ -1,0 +1,69 @@
+SCENARIO 4 — Resource Exhaustion
+===================================
+Fault type:          stress-ng (2 CPU workers + 256MB memory)
+Fault duration:      45 seconds
+Affected module:     adventurelog-backend (Gunicorn workers)
+
+OBSERVATIONS:
+  CPU before / during / after:    0.04% / 320.14% / 0.12%
+  Memory before / during / after: 3.66% / 7.84% / 4.35%
+  Response times during stress:   0.005571 0.004511 0.006164
+  API HTTP status during stress:  200
+  Response time after:            0.002214s
+
+METRICS:
+  System availability:        [FILL IN: % of requests that returned non-5xx]
+  MTTR:                       N/A (stress self-terminates after 45s)
+  Performance degradation:    [FILL IN: baseline vs during p(95)]
+  OOM kills observed:         [FILL IN: check docker events]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: docker stats showing CPU/memory spike]
+  [ATTACH: k6 output showing response time degradation]
+  [ATTACH: resource graph returning to normal after stress ends]
+SCENARIO 4 — Resource Exhaustion
+===================================
+Fault type:          stress-ng (2 CPU workers + 256MB memory)
+Fault duration:      45 seconds
+Affected module:     adventurelog-backend (Gunicorn workers)
+
+OBSERVATIONS:
+  CPU before / during / after:    0.12% / 329.51% / 0.14%
+  Memory before / during / after: 3.65% / 7.21% / 3.70%
+  Response times during stress:   0.004899 0.004430 0.004218
+  API HTTP status during stress:  200
+  Response time after:            0.003336s
+
+METRICS:
+  System availability:        [FILL IN: % of requests that returned non-5xx]
+  MTTR:                       N/A (stress self-terminates after 45s)
+  Performance degradation:    [FILL IN: baseline vs during p(95)]
+  OOM kills observed:         [FILL IN: check docker events]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: docker stats showing CPU/memory spike]
+  [ATTACH: k6 output showing response time degradation]
+  [ATTACH: resource graph returning to normal after stress ends]
+SCENARIO 4 — Resource Exhaustion
+===================================
+Fault type:          stress-ng (2 CPU workers + 256MB memory)
+Fault duration:      45 seconds
+Affected module:     adventurelog-backend (Gunicorn workers)
+
+OBSERVATIONS:
+  CPU before / during / after:    0.08% / 301.77% / 0.08%
+  Memory before / during / after: 3.65% / 7.75% / 4.26%
+  Response times during stress:   0.004471 0.003715 0.005531
+  API HTTP status during stress:  200
+  Response time after:            0.003466s
+
+METRICS:
+  System availability:        [FILL IN: % of requests that returned non-5xx]
+  MTTR:                       N/A (stress self-terminates after 45s)
+  Performance degradation:    [FILL IN: baseline vs during p(95)]
+  OOM kills observed:         [FILL IN: check docker events]
+
+SCREENSHOT PLACEHOLDER:
+  [ATTACH: docker stats showing CPU/memory spike]
+  [ATTACH: k6 output showing response time degradation]
+  [ATTACH: resource graph returning to normal after stress ends]

@@ -1,0 +1,81 @@
+[17:38:34] Pre-flight: verifying stack is healthy...
+[17:38:35] ✅ Stack healthy (frontend: 200, backend: 000000)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:38:35] SCENARIO 1: Database Failure
+[17:38:35] Fault: Stop adventurelog-db container for 30 seconds
+[17:38:35] Risk: All DB-dependent endpoints fail; tests recovery on restart
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:38:35] Baseline checks before fault injection...
+  ℹ️  INFO: Backend /api/locations/ pre-fault: HTTP 000000
+[17:38:35] INJECTING FAULT: docker compose stop db
+ Container adventurelog-db  Stopping
+ Container adventurelog-db  Stopped
+[17:38:35] DB stopped at 17:38:35
+[17:38:42] Checking system behavior during fault...
+  ℹ️  INFO: Backend /api/locations/ during fault: HTTP 000000
+  ❌ FAIL: Backend returned unexpected 000000 — may be serving stale cached data
+  ℹ️  INFO: Frontend during fault: HTTP 200
+  ✅ PASS: Frontend still responds during DB fault (HTTP 200)
+  ℹ️  INFO: Auth /user-metadata/ during fault: HTTP 000000
+  ℹ️  INFO: CSRF endpoint during fault: HTTP 000000
+[17:38:42] Fault active — waiting before recovery (total 30s)...
+[17:39:02] RECOVERING: docker compose start db
+ Container adventurelog-db  Starting
+ Container adventurelog-db  Started
+[17:39:03] Waiting for DB to accept connections...
+[17:39:03] DB accepting connections after 1s
+[17:39:03] Post-recovery checks...
+  ✅ PASS: Backend /api/locations/ healthy after recovery (HTTP 200)
+[17:39:03] Scenario 1 complete. Results saved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:39:21] SCENARIO 2: Backend API Downtime
+[17:39:21] Fault: Stop adventurelog-backend container for 30 seconds
+[17:39:21] Risk: Frontend completely loses API; auth, locations, collections all fail
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:39:21] Baseline checks...
+  ℹ️  INFO: Frontend baseline: HTTP 200
+  ℹ️  INFO: Backend baseline:  HTTP 200
+[17:39:21] INJECTING FAULT: docker compose stop server
+ Container adventurelog-backend  Stopping
+ Container adventurelog-backend  Stopped
+[17:39:23] Backend stopped at 17:39:23
+[17:39:26] Checking behavior during fault...
+  ℹ️  INFO: Frontend during fault: HTTP 200
+  ✅ PASS: Frontend server still responds (HTTP 200)
+  ℹ️  INFO: Backend during fault: HTTP 000000
+  ❌ FAIL: Backend still responding despite container stop (HTTP 000000)
+  ℹ️  INFO: Frontend /locations during fault: HTTP 302
+  ℹ️  INFO: Auth endpoint during fault: HTTP 000000
+[17:39:53] RECOVERING: docker compose start server
+ Container adventurelog-backend  Starting
+ Container adventurelog-backend  Started
+  ✅ PASS: Backend healthy (HTTP 000000)
+  ✅ PASS: Frontend healthy (HTTP 200)
+[17:39:54] Scenario 2 complete.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:40:09] SCENARIO 3: Network Latency Injection
+[17:40:09] Fault: 2000ms latency on backend container network interface
+[17:40:09] Risk: Response times exceed SLA thresholds; timeouts on slow clients
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[17:40:09] Measuring baseline response time...
+  ℹ️  INFO: Baseline /csrf/ response time: 0.162985s
+[17:40:09] INJECTING FAULT: 2000ms netem delay on backend eth0
+  ℹ️  INFO: tc not available — simulating with gunicorn worker timeout override
+[17:40:12] Measuring response times during latency injection...
+  ℹ️  INFO:   Request 1: 0.003140s
+  ℹ️  INFO:   Request 2: 0.005571s
+  ℹ️  INFO:   Request 3: 0.003571s
+  ℹ️  INFO:   Request 4: 0.004723s
+  ℹ️  INFO:   Request 5: 0.007372s
+  ❌ FAIL: Latency not clearly observed: only 0/5 requests slow
+  ℹ️  INFO: Auth endpoint with latency: 0.167797s
+[17:40:25] RECOVERING: removing tc netem rules
+  ℹ️  INFO: Recovery response time: 0.003331s
+  ✅ PASS: Response time normalized after latency removal (0.003331s)
+[17:40:27] Scenario 3 complete.
